@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.description = "Repose (re-compose) is an intelligent tool that uses AI to create GitHub repositories with smart descriptions, topics, READMEs, and project structure"
   spec.homepage = "https://github.com/wesleyscholl/repose"
   spec.license = "MIT"
-  spec.required_ruby_version = ">= 2.6.0"
+  spec.required_ruby_version = ">= 3.0.0"
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
   spec.metadata["homepage_uri"] = spec.homepage
@@ -36,6 +36,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "tty-prompt", "~> 0.23"
   spec.add_dependency "tty-spinner", "~> 0.9"
   spec.add_dependency "yaml", "~> 0.3"
+  spec.add_dependency "ostruct", "~> 0.6"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html

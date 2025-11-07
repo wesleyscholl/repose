@@ -6,13 +6,14 @@ module Repose
   class Config
     attr_accessor :github_token, :openai_api_key, :default_topics, :default_language
 
-    def initialize
-      load_config
-    end
+  def initialize
+    @default_topics = []
+    load_config
+  end
 
-    def config_file_path
-      File.expand_path("~/.repose.yml")
-    end
+  def config_file_path
+    File.expand_path("~/.repose.yml")
+  end
 
     def load_config
       return unless File.exist?(config_file_path)

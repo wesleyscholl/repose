@@ -17,4 +17,5 @@ group :test do
   gem "webmock", "~> 3.0"
   gem "vcr", "~> 6.0"
   gem "simplecov", "~> 0.22"
+  gem "simplecov-lcov", "~> 0.8"
 end

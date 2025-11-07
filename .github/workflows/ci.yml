@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby-version: ['3.0', '3.1', '3.2', '3.3', '3.4']
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Ruby ${{ matrix.ruby-version }}
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby-version }}
+        bundler-cache: true
+        
+    - name: Run tests
+      run: bundle exec rspec
+      
+    - name: Run RuboCop
+      run: bundle exec rubocop
+      
+    - name: Upload coverage reports to Codecov
+      if: matrix.ruby-version == '3.4'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage/lcov.info
+        fail_ci_if_error: true
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.4'
+        bundler-cache: true
+    
+    - name: Build gem
+      run: gem build repose.gemspec
+    
+    - name: Publish to RubyGems
+      if: contains(github.event.head_commit.message, '[release]')
+      env:
+        GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+      run: |
+        gem push repose-*.gem

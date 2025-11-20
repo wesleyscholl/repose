@@ -1,10 +1,14 @@
 # frozen_string_literal: true
 
+require_relative "ai/gemini_provider"
+require_relative "ai/ollama_provider"
+
 module Repose
   class AIGenerator
-    def initialize
-      # Note: OpenAI dependency temporarily removed for compatibility
-      # @client = OpenAI::Client.new(access_token: Repose.config.openai_api_key)
+    attr_reader :provider
+
+    def initialize(provider: nil)
+      @provider = select_provider(provider)
     end
 
     def generate(context)
@@ -16,10 +20,80 @@ module Repose
       }
     end
 
+    def use_ai?
+      !@provider.nil?
+    end
+
     private
 
+    def select_provider(provider_name)
+      return nil if provider_name == :none || provider_name == false
+
+      case provider_name&.to_sym
+      when :gemini
+        AI::GeminiProvider.new if gemini_available?
+      when :ollama
+        AI::OllamaProvider.new if ollama_available?
+      when nil
+        # Auto-detect: prefer Gemini, fallback to Ollama, then none
+        if gemini_available?
+          AI::GeminiProvider.new
+        elsif ollama_available?
+          AI::OllamaProvider.new
+        end
+      else
+        raise ArgumentError, "Unknown AI provider: #{provider_name}"
+      end
+    rescue Repose::ConfigurationError, Repose::APIError
+      nil # Fallback to template-based generation
+    end
+
+    def gemini_available?
+      return false unless ENV["GEMINI_API_KEY"]
+      
+      AI::GeminiProvider.new.available?
+    rescue StandardError
+      false
+    end
+
+    def ollama_available?
+      AI::OllamaProvider.new.available?
+    rescue StandardError
+      false
+    end
+
     def generate_description(context)
-      # Fallback description generation without AI for now
+      if use_ai?
+        @provider.generate_description(context)
+      else
+        generate_fallback_description(context)
+      end
+    rescue Repose::APIError, Repose::AuthenticationError
+      generate_fallback_description(context)
+    end
+
+    def generate_topics(context)
+      if use_ai?
+        @provider.generate_topics(context)
+      else
+        generate_fallback_topics(context)
+      end
+    rescue Repose::APIError, Repose::AuthenticationError
+      generate_fallback_topics(context)
+    end
+
+    def generate_readme(context)
+      if use_ai?
+        @provider.generate_readme(context)
+      else
+        generate_fallback_readme(context)
+      end
+    rescue Repose::APIError, Repose::AuthenticationError
+      generate_fallback_readme(context)
+    end
+
+    def generate_fallback_description(context)
+      # Fallback description generation without AI
       base_desc = "A #{context[:language]}"
       base_desc += " #{context[:framework]}" if context[:framework]
       base_desc += " project"
@@ -28,7 +102,7 @@ module Repose
       base_desc.capitalize
     end
 
-    def generate_topics(context)
+    def generate_fallback_topics(context)
       # Basic topic generation without AI
       topics = []
       topics << context[:language].downcase if context[:language]
@@ -42,10 +116,6 @@ module Repose
       topics << "tool" if name_lower.include?("tool") || name_lower.include?("util")
       
       topics.uniq.first(8)
-    end
-
-    def generate_readme(context)
-      generate_fallback_readme(context)
     end
 
     def generate_fallback_readme(context)

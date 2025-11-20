@@ -8,4 +8,10 @@ module Repose
     class AIError < Error; end
     class ValidationError < Error; end
   end
+
+  # Convenience aliases for AI providers
+  ConfigurationError = Errors::ConfigError
+  APIError = Errors::AIError
+  AuthenticationError = Errors::AIError
+  RateLimitError = Errors::AIError
 end

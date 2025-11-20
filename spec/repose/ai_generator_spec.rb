@@ -7,6 +7,88 @@ RSpec.describe Repose::AIGenerator do
     it "creates a new instance without errors" do
       expect { generator }.not_to raise_error
     end
+
+    it "accepts provider parameter" do
+      gen = described_class.new(provider: :none)
+      expect(gen.provider).to be_nil
+    end
+
+    context "with Gemini provider" do
+      before do
+        ENV["GEMINI_API_KEY"] = "test-key"
+        allow_any_instance_of(Repose::AI::GeminiProvider).to receive(:available?).and_return(true)
+      end
+
+      after do
+        ENV.delete("GEMINI_API_KEY")
+      end
+
+      it "initializes Gemini provider when specified" do
+        gen = described_class.new(provider: :gemini)
+        expect(gen.provider).to be_a(Repose::AI::GeminiProvider)
+      end
+
+      it "auto-detects Gemini when available and no provider specified" do
+        gen = described_class.new
+        expect(gen.provider).to be_a(Repose::AI::GeminiProvider)
+      end
+    end
+
+    context "with Ollama provider" do
+      before do
+        ENV.delete("GEMINI_API_KEY")
+        allow_any_instance_of(Repose::AI::OllamaProvider).to receive(:available?).and_return(true)
+      end
+
+      it "initializes Ollama provider when specified" do
+        gen = described_class.new(provider: :ollama)
+        expect(gen.provider).to be_a(Repose::AI::OllamaProvider)
+      end
+
+      it "falls back to Ollama when Gemini unavailable" do
+        gen = described_class.new
+        expect(gen.provider).to be_a(Repose::AI::OllamaProvider)
+      end
+    end
+
+    context "with no AI provider available" do
+      before do
+        ENV.delete("GEMINI_API_KEY")
+        allow_any_instance_of(Repose::AI::OllamaProvider).to receive(:available?).and_return(false)
+      end
+
+      it "uses nil provider for fallback mode" do
+        gen = described_class.new
+        expect(gen.provider).to be_nil
+      end
+    end
+
+    it "raises error for unknown provider" do
+      expect { described_class.new(provider: :unknown) }.to raise_error(ArgumentError)
+    end
+  end
+
+  describe "#use_ai?" do
+    it "returns false when provider is nil" do
+      gen = described_class.new(provider: :none)
+      expect(gen.use_ai?).to be false
+    end
+
+    context "with AI provider" do
+      before do
+        ENV["GEMINI_API_KEY"] = "test-key"
+        allow_any_instance_of(Repose::AI::GeminiProvider).to receive(:available?).and_return(true)
+      end
+
+      after do
+        ENV.delete("GEMINI_API_KEY")
+      end
+
+      it "returns true when provider is set" do
+        gen = described_class.new(provider: :gemini)
+        expect(gen.use_ai?).to be true
+      end
+    end
   end
 
   describe "#generate" do

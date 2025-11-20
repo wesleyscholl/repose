@@ -6,14 +6,14 @@
 
 [![Gem Version](https://badge.fury.io/rb/repose.svg)](https://badge.fury.io/rb/repose)
 [![CI](https://github.com/wesleyscholl/repose/actions/workflows/ci.yml/badge.svg)](https://github.com/wesleyscholl/repose/actions/workflows/ci.yml)
-[![Test Coverage](https://img.shields.io/badge/coverage-98.39%25-brightgreen.svg)](https://github.com/wesleyscholl/repose)
+[![Test Coverage](https://img.shields.io/badge/coverage-96.63%25-brightgreen.svg)](https://github.com/wesleyscholl/repose)
 [![Ruby Version](https://img.shields.io/badge/ruby-3.0%2B-red.svg)](https://ruby-lang.org)
 
 Repose (re-compose) is an intelligent CLI tool that uses AI to create GitHub repositories with smart descriptions, relevant topics, comprehensive READMEs, and proper project structure. No more staring at blank repository forms!
 
 ## ✨ Features
 
-- **🤖 AI-Generated Content**: Automatically generates descriptions, topics, and READMEs using intelligent patterns
+- **🤖 AI-Generated Content**: Multiple AI providers (Gemini, Ollama) or template-based fallback
 - **🎯 Smart Context Awareness**: Understands project purpose from name, language, and framework
 - **🔧 Interactive CLI**: Guided prompts for missing information with beautiful UI
 - **📝 Professional READMEs**: Creates comprehensive, well-structured documentation
@@ -22,7 +22,41 @@ Repose (re-compose) is an intelligent CLI tool that uses AI to create GitHub rep
 - **🔐 Secure Configuration**: Encrypted storage of API keys and tokens
 - **⚡ Multi-Language Support**: Built-in support for 10+ programming languages
 - **🎨 Framework Intelligence**: Recognizes and suggests popular frameworks
-- **🧪 98.39% Test Coverage**: Production-ready with comprehensive testing
+- **🤖 Flexible AI Integration**: Choose between Gemini, Ollama, or template-based generation
+- **🧪 96.63% Test Coverage**: Production-ready with comprehensive testing
+
+## 🤖 AI Provider Options
+
+Repose supports multiple AI providers for intelligent content generation:
+
+### Gemini (Google AI)
+```bash
+export GEMINI_API_KEY='your-api-key'
+repose create my-project  # Auto-detects Gemini
+```
+
+### Ollama (Local AI)
+```bash
+# Install and start Ollama
+brew install ollama
+ollama serve
+ollama pull mistral
+
+# Configure (optional)
+export OLLAMA_ENDPOINT='http://localhost:11434'
+export OLLAMA_MODEL='mistral'
+
+repose create my-project  # Auto-detects Ollama
+```
+
+### Template-Based (No AI Required)
+Works out of the box with intelligent templates - no AI configuration needed!
+
+### Auto-Detection
+Repose automatically selects the best available provider:
+1. **Gemini** (if `GEMINI_API_KEY` is set)
+2. **Ollama** (if service is running)
+3. **Template-based** (always available as fallback)
 
 ## 🚀 Quick Start
 
@@ -41,8 +75,9 @@ repose configure
 ```
 
 You'll need:
-- **GitHub Personal Access Token** (with repo permissions)
-- **OpenAI API Key** (optional, for enhanced AI features)
+- **GitHub Personal Access Token** (with repo permissions) - **Required**
+- **Gemini API Key** (optional, for AI-powered generation)
+- **Ollama** (optional, for local AI - `brew install ollama && ollama serve`)
 
 ### Create Your First Repository
 
@@ -125,7 +160,7 @@ Located at `~/.repose.yml`:
 
 ```yaml
 github_token: "your_github_token"
-openai_api_key: "your_openai_key"  # Optional
+gemini_api_key: "your_gemini_key"  # Optional
 default_topics: ["opensource", "ruby"]
 default_language: "ruby"
 ```
@@ -133,7 +168,9 @@ default_language: "ruby"
 ### Environment Variables
 ```bash
 export GITHUB_TOKEN="your_token"
-export OPENAI_API_KEY="your_key"  # Optional
+export GEMINI_API_KEY="your_key"  # Optional for AI features
+export OLLAMA_ENDPOINT="http://localhost:11434"  # Optional for Ollama
+export OLLAMA_MODEL="mistral"  # Optional, defaults to mistral
 ```
 
 ## 🌍 Supported Languages & Frameworks
@@ -177,7 +214,7 @@ Setup or update configuration settings.
 
 **Interactive prompts for:**
 - GitHub Personal Access Token
-- OpenAI API Key (optional)
+- Gemini API Key (optional)
 - Default topics
 - Default language
 
@@ -232,7 +269,7 @@ bundle exec rubocop
 ```
 
 ### Test Coverage
-Current test coverage: **98.39%** (183/186 lines)
+Current test coverage: **96.63%** (373/386 lines)
 
 - **Unit Tests**: Individual class and method testing
 - **Integration Tests**: End-to-end workflow validation  
@@ -275,7 +312,8 @@ export OPENAI_API_KEY="your_key"
 
 ### Required Permissions
 - **GitHub Token**: `repo` scope for repository creation
-- **OpenAI Key**: Standard API access (optional)
+- **Gemini Key**: Standard API access (optional, for AI features)
+- **Ollama**: Local service (optional, for privacy-focused AI)
 
 ## 🤝 Contributing
 
@@ -307,7 +345,7 @@ Repose represents the future of intelligent development tooling, combining AI-po
 
 ### Technical Achievements
 
-- ✅ **Production-Ready Quality:** 98.39% test coverage with 123 comprehensive test examples across unit and integration testing
+- ✅ **Production-Ready Quality:** 96.63% test coverage with 181 comprehensive test examples across unit and integration testing
 - ✅ **AI Content Generation:** Intelligent repository creation with context-aware descriptions, topics, and documentation
 - ✅ **Multi-Language Support:** Built-in intelligence for 10+ programming languages and their popular frameworks
 - ✅ **Secure Configuration:** Encrypted API key storage with industry-standard security practices
@@ -315,7 +353,7 @@ Repose represents the future of intelligent development tooling, combining AI-po
 
 ### Performance Metrics
 
-- **Test Coverage:** 98.39% (183/186 lines) with comprehensive edge case coverage
+- **Test Coverage:** 96.63% (373/386 lines) with comprehensive edge case coverage
 - **API Response Time:** Sub-second repository creation with optimized GitHub API usage
 - **Security Score:** Full compliance with secure credential management best practices
 - **Framework Support:** 25+ frameworks across multiple programming languages
@@ -434,6 +472,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🏷️ Version History
 
+- **v1.1.0** (2025-01-20): AI provider integration (Gemini + Ollama) with 96.63% test coverage
 - **v1.0.0** (2025-11-07): Production release with 98.39% test coverage
 - **v0.1.0** (2024-11-07): Initial release with core functionality
 

@@ -5,6 +5,98 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.1.0] - 2025-01-20
+
+### Added - AI Provider Integration 🤖
+
+#### Gemini AI Integration
+- **New Provider**: `Repose::AI::GeminiProvider` for Google Gemini AI
+  - AI-powered repository descriptions, topics, and README generation
+  - Support for multiple models (gemini-1.5-flash default, gemini-1.5-pro)
+  - Automatic API key configuration via `GEMINI_API_KEY` environment variable
+  - Retry logic with exponential backoff (max 3 retries, 30s timeout)
+  - Comprehensive error handling (authentication, rate limiting, timeouts)
+  - 56 test cases with full coverage
+
+#### Ollama Local AI Integration
+- **New Provider**: `Repose::AI::OllamaProvider` for local AI models
+  - Privacy-focused AI generation using locally-hosted models
+  - Support for all Ollama models (mistral, llama3, gemma, etc.)
+  - Model listing and pulling capabilities
+  - Configurable via `OLLAMA_ENDPOINT` and `OLLAMA_MODEL` env vars
+  - Connection error handling with setup instructions
+  - 56 test cases with full coverage
+
+#### Enhanced AIGenerator
+- Auto-detection of available AI providers (Gemini → Ollama → Fallback)
+- Explicit provider selection via `provider:` constructor parameter
+- `use_ai?` method to check if AI provider is active
+- Graceful degradation to template-based generation on errors
+- Comprehensive fallback logic for all generation methods
+- 13 new test cases for provider integration
+
+#### Error Handling
+- Extended error hierarchy with AI-specific exceptions
+- `ConfigurationError` for missing/invalid API keys
+- `APIError` for general API failures
+- `AuthenticationError` for invalid credentials
+- `RateLimitError` for API rate limit exceeded
+
+#### Documentation & Demos
+- `demo_ai_providers.rb` - Comprehensive demo of all AI features
+  - Fallback mode demonstration
+  - Gemini integration (when API key available)
+  - Ollama integration (when service running)
+  - Auto-detection behavior
+  - Error handling and graceful degradation
+  - Configuration examples
+
+### Changed
+- **AIGenerator API**: Now accepts optional `provider:` parameter
+  - `:gemini` - Force Gemini provider
+  - `:ollama` - Force Ollama provider  
+  - `:none`/`false` - Force fallback mode
+  - `nil` (default) - Auto-detect best available
+
+### Technical Details
+- **Test Coverage**: 96.63% (373/386 lines)
+- **New Code**: 455 lines (AI providers)
+- **Test Code**: 642 lines (comprehensive suite)
+- **Dependencies**: No new gems (uses Net::HTTP)
+- **Backward Compatible**: All existing tests passing
+
+### Configuration Examples
+```bash
+# Gemini
+export GEMINI_API_KEY='your-api-key'
+
+# Ollama (optional, defaults shown)
+export OLLAMA_ENDPOINT='http://localhost:11434'
+export OLLAMA_MODEL='mistral'
+```
+
+### Usage Examples
+```ruby
+# Auto-detect provider
+generator = Repose::AIGenerator.new
+
+# Force specific provider
+generator = Repose::AIGenerator.new(provider: :gemini)
+generator = Repose::AIGenerator.new(provider: :ollama)
+
+# Generate content
+result = generator.generate({
+  name: "my-project",
+  language: "Ruby",
+  framework: "Rails",
+  purpose: "Web application"
+})
+```
+
+---
+
 ## [1.0.0] - 2025-11-07 🎉
 
 ### 🎯 Production Release

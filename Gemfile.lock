@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    repose (1.1.0)
+    reposer (1.1.1)
       faraday (~> 2.0)
       octokit (~> 6.0)
       ostruct (~> 0.6)
@@ -136,7 +136,7 @@ PLATFORMS
 
 DEPENDENCIES
   pry (~> 0.14)
-  repose!
+  reposer!
   rspec (~> 3.0)
   rubocop (~> 1.0)
   rubocop-performance

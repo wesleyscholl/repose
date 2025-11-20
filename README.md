@@ -1,15 +1,15 @@
-# Repose 🎯
+# Reposer 🎯
 
 **Status**: Production-ready Ruby gem for AI-powered repository creation - intelligent automation of GitHub project setup and documentation generation.
 
 > **AI-powered GitHub repository creation and management tool**
 
-[![Gem Version](https://badge.fury.io/rb/repose.svg)](https://badge.fury.io/rb/repose)
+[![Gem Version](https://badge.fury.io/rb/reposer.svg)](https://badge.fury.io/rb/reposer)
 [![CI](https://github.com/wesleyscholl/repose/actions/workflows/ci.yml/badge.svg)](https://github.com/wesleyscholl/repose/actions/workflows/ci.yml)
 [![Test Coverage](https://img.shields.io/badge/coverage-96.63%25-brightgreen.svg)](https://github.com/wesleyscholl/repose)
 [![Ruby Version](https://img.shields.io/badge/ruby-3.0%2B-red.svg)](https://ruby-lang.org)
 
-Repose (re-compose) is an intelligent CLI tool that uses AI to create GitHub repositories with smart descriptions, relevant topics, comprehensive READMEs, and proper project structure. No more staring at blank repository forms!
+Reposer is an intelligent CLI tool that uses AI to create GitHub repositories with smart descriptions, relevant topics, comprehensive READMEs, and proper project structure. No more staring at blank repository forms!
 
 ## ✨ Features
 
@@ -63,7 +63,7 @@ Repose automatically selects the best available provider:
 ### Installation
 
 ```bash
-gem install repose
+gem install repo-composer
 ```
 
 ### Setup
@@ -71,7 +71,7 @@ gem install repose
 Configure your credentials (one-time setup):
 
 ```bash
-repose configure
+repo-composer configure
 ```
 
 You'll need:
@@ -82,44 +82,44 @@ You'll need:
 ### Create Your First Repository
 
 ```bash
-repose create my-awesome-project
+reposer create my-awesome-project
 ```
 
-That's it! Repose will intelligently guide you through the process.
+That's it! Reposer will intelligently guide you through the process.
 
 ## 🎨 Usage Examples
 
 ### Basic Usage
 ```bash
-# Interactive mode - Repose guides you
-repose create my-project
+# Interactive mode - Reposer guides you
+reposer create my-project
 
 # Quick creation with language
-repose create web-scraper --language ruby
+reposer create web-scraper --language ruby
 
 # Full specification
-repose create api-server --language go --framework gin --private
+reposer create api-server --language go --framework gin --private
 ```
 
 ### Advanced Usage
 ```bash
 # Preview before creating
-repose create ai-chatbot --language python --framework fastapi --dry-run
+reposer create ai-chatbot --language python --framework fastapi --dry-run
 
 # Custom description and topics
-repose create data-processor \
+reposer create data-processor \
   --language python \
   --description "High-performance data processing pipeline" \
   --topics ml,data,etl,python
 
 # Framework-specific project
-repose create blog-api --language ruby --framework rails --private
+reposer create blog-api --language ruby --framework rails --private
 ```
 
 ### Interactive Experience
 ```bash
-$ repose create awesome-api
-🎯 Repose - AI Repository Creator
+$ reposer create awesome-api
+🎯 Reposer - AI Repository Creator
 ========================================
 Primary programming language: ruby
 Framework/Library: Rails  
@@ -152,11 +152,11 @@ Create repository? (Y/n) y
 
 ### Initial Setup
 ```bash
-repose configure
+reposer configure
 ```
 
 ### Configuration File
-Located at `~/.repose.yml`:
+Located at `~/.reposer.yml`:
 
 ```yaml
 github_token: "your_github_token"
@@ -472,8 +472,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🏷️ Version History
 
-- **v1.1.0** (2025-01-20): AI provider integration (Gemini + Ollama) with 96.63% test coverage
-- **v1.0.0** (2025-11-07): Production release with 98.39% test coverage
+- **v1.1.0** (2025-01-20): Published as `repo-composer` (gem name change), AI provider integration (Gemini + Ollama) with 96.63% test coverage
+- **v1.0.0** (2025-11-07): Production release with 98.39% test coverage (as `repose`)
 - **v0.1.0** (2024-11-07): Initial release with core functionality
 
 ---

@@ -3,13 +3,13 @@
 require_relative "lib/repose/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "repose"
+  spec.name = "reposer"
   spec.version = Repose::VERSION
   spec.authors = ["Wesley Scholl"]
-  spec.email = ["wesley@example.com"]
+  spec.email = ["wesleyscholl@gmail.com"]
 
   spec.summary = "AI-powered GitHub repository creation and management"
-  spec.description = "Repose (re-compose) is an intelligent tool that uses AI to create GitHub repositories with smart descriptions, topics, READMEs, and project structure"
+  spec.description = "Reposer is an intelligent tool that uses AI to create GitHub repositories with smart descriptions, topics, READMEs, and project structure"
   spec.homepage = "https://github.com/wesleyscholl/repose"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.0.0"
@@ -18,6 +18,7 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/wesleyscholl/repose"
   spec.metadata["changelog_uri"] = "https://github.com/wesleyscholl/repose/blob/main/CHANGELOG.md"
+  spec.metadata["rubygems_mfa_required"] = "true"
 
   # Specify which files should be added to the gem when it is released.
   spec.files = Dir.chdir(__dir__) do
@@ -26,7 +27,7 @@ Gem::Specification.new do |spec|
     end
   end
   spec.bindir = "exe"
-  spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
+  spec.executables = ["reposer"]
   spec.require_paths = ["lib"]
 
   spec.add_dependency "thor", "~> 1.0"

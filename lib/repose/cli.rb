@@ -107,8 +107,8 @@ module Repose
 
       # Interactive prompts for missing context
       unless context[:language]
-        languages = %w[ruby python javascript typescript java go rust php swift kotlin]
-        context[:language] = prompt.select("Primary programming language:", languages, per_page: 10)
+        languages = %w[c c++ c# go java javascript kotlin mojo php python ruby rust scala typescript]
+        context[:language] = prompt.select("Primary programming language:", languages, per_page: 14)
       end
 
       unless context[:framework]

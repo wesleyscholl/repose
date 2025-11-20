@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.0] - 2025-01-20
 
+### Changed - Gem Renamed
+- **Breaking**: Gem renamed from `repose` to `repo-composer` (original name taken on RubyGems)
+- Installation: `gem install repo-composer` (was `gem install repose`)
+- Command: `repo-composer` (was `repose`)
+- All functionality remains identical
+
 ### Added - AI Provider Integration 🤖
 
 #### Gemini AI Integration

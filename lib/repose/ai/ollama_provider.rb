@@ -132,32 +132,37 @@ module Repose
 
       def build_description_prompt(context)
         <<~PROMPT
-          Generate a concise GitHub repository description (max 100 characters) for:
+          Generate a concise GitHub repository description (max 120 characters) for:
           
           Repository: #{context[:name]}
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
           
-          Return ONLY the description text with no quotes or formatting.
+          IMPORTANT: Include at least 2 relevant emojis that represent the project.
+          Example: "🚀 Fast API server for data processing 📊"
+          
+          Return ONLY the description text with emojis, no quotes or formatting.
         PROMPT
       end
 
       def build_topics_prompt(context)
         <<~PROMPT
-          Generate 5-8 GitHub topics for:
+          Generate 20 GitHub topics for:
           
           Repository: #{context[:name]}
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
           
-          Return ONLY comma-separated lowercase keywords (e.g., python, api, docker, cli).
+          Include topics for: language, framework, use-case, architecture, deployment, testing.
+          Return ONLY comma-separated lowercase keywords (e.g., python, api, docker, cli, testing, ci-cd).
         PROMPT
       end
 
       def build_readme_prompt(context)
         title = context[:name].split(/[-_]/).map(&:capitalize).join(" ")
+        license = context[:license] || "MIT"
         
         <<~PROMPT
           Create a GitHub README.md for:
@@ -166,17 +171,18 @@ module Repose
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
+          License: #{license}
           
-          Include:
-          - Title (# #{title})
-          - Brief description
-          - Features (3-5 bullet points)
-          - Installation (#{context[:language]}-specific commands)
-          - Usage with code examples
-          - Contributing
-          - MIT License
+          Include sections with emojis:
+          - Title with emoji (# 🚀 #{title})
+          - Brief description with emojis
+          - ✨ Features (3-5 bullet points with emojis)
+          - 🚀 Installation (#{context[:language]}-specific commands)
+          - 💻 Usage with code examples
+          - 🤝 Contributing
+          - 📄 License (#{license})
           
-          Use proper Markdown. Return ONLY the README content.
+          Use proper Markdown with emojis. Return ONLY the README content.
         PROMPT
       end
 
@@ -196,8 +202,8 @@ module Repose
         # Extract comma-separated values
         topics = text.split(",").map(&:strip).map(&:downcase)
         
-        # Remove duplicates, filter out empty, limit to 8
-        topics.reject(&:empty?).uniq.first(8)
+        # Remove duplicates, filter out empty, limit to 20
+        topics.reject(&:empty?).uniq.first(20)
       end
     end
   end

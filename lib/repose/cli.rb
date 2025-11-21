@@ -20,6 +20,7 @@ module Repose
       Examples:
         $ repose create my-awesome-project
         $ repose create web-scraper --language ruby --framework rails
+        $ repose create api-server --license apache-2.0
     DESC
     option :language, type: :string, desc: "Primary programming language"
     option :framework, type: :string, desc: "Framework or library to use"
@@ -27,6 +28,7 @@ module Repose
     option :private, type: :boolean, default: false, desc: "Create private repository"
     option :template, type: :string, desc: "Repository template to use"
     option :topics, type: :array, desc: "Custom topics/tags"
+    option :license, type: :string, desc: "License type (mit, apache-2.0, gpl-3.0, bsd-3-clause, unlicense, etc.)"
     option :dry_run, type: :boolean, default: false, desc: "Preview without creating"
     def create(name = nil)
       pastel = Pastel.new
@@ -102,12 +104,13 @@ module Repose
         language: options[:language],
         framework: options[:framework],
         description: options[:description],
-        topics: options[:topics] || []
+        topics: options[:topics] || [],
+        license: options[:license]
       }
 
       # Interactive prompts for missing context
       unless context[:language]
-        languages = %w[c c++ c# go java javascript kotlin mojo php python ruby rust scala typescript]
+        languages = %w[c c++ c# go java javascript kotlin mojo php python ruby rust scala swift typescript]
         context[:language] = prompt.select("Primary programming language:", languages, per_page: 14)
       end
 
@@ -116,6 +119,24 @@ module Repose
         if frameworks.any?
           context[:framework] = prompt.select("Framework/Library (optional):", ["None"] + frameworks)
           context[:framework] = nil if context[:framework] == "None"
+        end
+      end
+
+      # License selection
+      unless context[:license]
+        licenses = [
+          { name: "MIT License (Permissive, most popular)", value: "mit" },
+          { name: "Apache 2.0 (Permissive with patent grant)", value: "apache-2.0" },
+          { name: "GPL 3.0 (Copyleft, strong)", value: "gpl-3.0" },
+          { name: "BSD 3-Clause (Permissive)", value: "bsd-3-clause" },
+          { name: "Mozilla Public License 2.0", value: "mpl-2.0" },
+          { name: "Unlicense (Public Domain)", value: "unlicense" },
+          { name: "Other/Custom", value: "other" }
+        ]
+        context[:license] = prompt.select("Choose a license:", licenses)
+        
+        if context[:license] == "other"
+          context[:license] = prompt.ask("Enter license name:", default: "MIT")
         end
       end
 
@@ -164,7 +185,8 @@ module Repose
           description: content[:description],
           private: options[:private],
           topics: content[:topics],
-          readme: content[:readme]
+          readme: content[:readme],
+          license: content[:license]
         )
         
         spinner.success("✅")

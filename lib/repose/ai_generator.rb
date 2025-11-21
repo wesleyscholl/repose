@@ -16,7 +16,8 @@ module Repose
         name: context[:name],
         description: generate_description(context),
         topics: generate_topics(context),
-        readme: generate_readme(context)
+        readme: generate_readme(context),
+        license: context[:license]
       }
     end
 
@@ -93,40 +94,84 @@ module Repose
     end
 
     def generate_fallback_description(context)
-      # Fallback description generation without AI
-      base_desc = "A #{context[:language]}"
+      # Fallback description generation without AI - with emojis
+      emoji = select_emoji_for_language(context[:language])
+      purpose_emoji = select_emoji_for_purpose(context[:purpose])
+      
+      base_desc = "#{emoji} A #{context[:language]}"
       base_desc += " #{context[:framework]}" if context[:framework]
       base_desc += " project"
       base_desc += " for #{context[:purpose]}" if context[:purpose] && !context[:purpose].empty?
+      base_desc += " #{purpose_emoji}" if purpose_emoji
       
       base_desc.capitalize
     end
 
     def generate_fallback_topics(context)
-      # Basic topic generation without AI
+      # Enhanced topic generation without AI - generate up to 20 relevant topics
       topics = []
       topics << context[:language].downcase if context[:language]
       topics << context[:framework].downcase if context[:framework]
       
-      # Add some common topics based on name patterns
+      # Language ecosystem topics
+      language_topics = language_ecosystem_topics(context[:language])
+      topics.concat(language_topics)
+      
+      # Framework-specific topics
+      if context[:framework]
+        framework_topics = framework_related_topics(context[:framework])
+        topics.concat(framework_topics)
+      end
+      
+      # Add topics based on name patterns
       name_lower = context[:name].downcase
       topics << "api" if name_lower.include?("api")
-      topics << "web" if name_lower.include?("web") || context[:framework]&.downcase&.include?("rails")
+      topics << "rest" if name_lower.include?("api") || name_lower.include?("rest")
+      topics << "graphql" if name_lower.include?("graphql")
+      topics << "web" if name_lower.include?("web") || context[:framework]&.downcase&.match?(/(rails|django|flask|express)/)
       topics << "cli" if name_lower.include?("cli") || name_lower.include?("command")
       topics << "tool" if name_lower.include?("tool") || name_lower.include?("util")
+      topics << "library" if name_lower.include?("lib")
+      topics << "microservice" if name_lower.include?("micro") || name_lower.include?("service")
+      topics << "automation" if name_lower.include?("auto") || name_lower.include?("script")
+      topics << "devops" if name_lower.include?("devops") || name_lower.include?("deploy")
+      topics << "docker" if name_lower.include?("docker") || name_lower.include?("container")
+      topics << "kubernetes" if name_lower.include?("k8s") || name_lower.include?("kube")
       
-      topics.uniq.first(8)
+      # Purpose-based topics
+      if context[:purpose]
+        purpose_lower = context[:purpose].downcase
+        topics << "ai" if purpose_lower.match?(/(ai|artificial|intelligence|ml|machine|learning)/)
+        topics << "data" if purpose_lower.match?(/(data|analytics|etl)/)
+        topics << "testing" if purpose_lower.match?(/(test|qa|quality)/)
+        topics << "monitoring" if purpose_lower.match?(/(monitor|observ|metric)/)
+        topics << "security" if purpose_lower.match?(/(secur|auth|encrypt)/)
+      end
+      
+      # General best practice topics
+      topics.concat(["opensource", "development", "best-practices"])
+      
+      topics.uniq.first(20)
     end
 
     def generate_fallback_readme(context)
       title = context[:name].split(/[-_]/).map(&:capitalize).join(" ")
+      emoji = select_emoji_for_language(context[:language])
+      license = context[:license] || "MIT"
       
       <<~README
-        # #{title}
+        # #{emoji} #{title}
 
-        A #{context[:language]} #{context[:framework] ? "#{context[:framework]} " : ""}project#{context[:purpose] && !context[:purpose].empty? ? " for #{context[:purpose]}" : ""}.
+        🚀 A #{context[:language]} #{context[:framework] ? "#{context[:framework]} " : ""}project#{context[:purpose] && !context[:purpose].empty? ? " for #{context[:purpose]}" : ""}.
 
-        ## Installation
+        ## ✨ Features
+
+        - 🛠️ Modern #{context[:language]} development
+        #{context[:framework] ? "- 🏛️ Built with #{context[:framework]}" : ""}
+        - 📚 Comprehensive documentation
+        - ✅ Production-ready code
+
+        ## 🚀 Installation
 
         ```bash
         git clone https://github.com/yourusername/#{context[:name]}.git
@@ -135,20 +180,20 @@ module Repose
 
         #{language_specific_install_instructions(context[:language])}
 
-        ## Usage
+        ## 💻 Usage
 
         More documentation coming soon!
 
-        ## Contributing
+        ## 🤝 Contributing
 
         1. Fork the repository
         2. Create a feature branch
         3. Make your changes
         4. Submit a pull request
 
-        ## License
+        ## 📄 License
 
-        This project is licensed under the MIT License.
+        This project is licensed under the #{license} License.
       README
     end
 
@@ -167,6 +212,93 @@ module Repose
       else
         ""
       end
+    end
+
+    def select_emoji_for_language(language)
+      emojis = {
+        "ruby" => "💎",
+        "python" => "🐍",
+        "javascript" => "⚡",
+        "typescript" => "📘",
+        "go" => "🚀",
+        "rust" => "🦀",
+        "java" => "☕",
+        "kotlin" => "🎯",
+        "swift" => "🍎",
+        "php" => "🐘",
+        "c" => "⚙️",
+        "c++" => "⚙️",
+        "c#" => "💠",
+        "scala" => "🎸",
+        "mojo" => "🔥"
+      }
+      emojis[language&.downcase] || "🚀"
+    end
+
+    def select_emoji_for_purpose(purpose)
+      return nil unless purpose && !purpose.empty?
+      
+      purpose_lower = purpose.downcase
+      if purpose_lower.match?(/(api|rest|graphql)/)
+        "🌐"
+      elsif purpose_lower.match?(/(data|analytics|etl)/)
+        "📊"
+      elsif purpose_lower.match?(/(ai|ml|machine|learning)/)
+        "🤖"
+      elsif purpose_lower.match?(/(web|website|frontend)/)
+        "🎨"
+      elsif purpose_lower.match?(/(cli|command|terminal)/)
+        "💻"
+      elsif purpose_lower.match?(/(test|testing|qa)/)
+        "✅"
+      elsif purpose_lower.match?(/(deploy|devops|automation)/)
+        "⚙️"
+      elsif purpose_lower.match?(/(monitor|observ|metric)/)
+        "📈"
+      elsif purpose_lower.match?(/(secur|auth|encrypt)/)
+        "🔐"
+      elsif purpose_lower.match?(/(game|gaming)/)
+        "🎮"
+      elsif purpose_lower.match?(/(chat|message|communication)/)
+        "💬"
+      else
+        "✨"
+      end
+    end
+
+    def language_ecosystem_topics(language)
+      topics_map = {
+        "ruby" => ["gem", "bundler", "rails", "ruby-on-rails"],
+        "python" => ["pip", "pypi", "django", "flask"],
+        "javascript" => ["npm", "nodejs", "webpack", "babel"],
+        "typescript" => ["npm", "nodejs", "webpack", "types"],
+        "go" => ["golang", "modules", "concurrent"],
+        "rust" => ["cargo", "crates", "systems-programming"],
+        "java" => ["maven", "gradle", "jvm", "spring"],
+        "kotlin" => ["gradle", "jvm", "android"],
+        "swift" => ["cocoapods", "spm", "ios"],
+        "php" => ["composer", "laravel", "symfony"],
+        "c#" => ["dotnet", "nuget", "asp-net"],
+        "scala" => ["sbt", "jvm", "functional"]
+      }
+      topics_map[language&.downcase] || []
+    end
+
+    def framework_related_topics(framework)
+      framework_lower = framework&.downcase
+      topics = []
+      
+      # Web frameworks
+      topics.concat(["web", "mvc", "backend"]) if framework_lower&.match?(/(rails|django|flask|express|spring)/)
+      topics.concat(["web", "frontend", "spa"]) if framework_lower&.match?(/(react|vue|angular)/)
+      
+      # API frameworks
+      topics.concat(["api", "rest", "microservices"]) if framework_lower&.match?(/(fastapi|gin|echo|actix)/)
+      
+      # Full-stack frameworks
+      topics.concat(["fullstack", "ssr"]) if framework_lower&.match?(/(next|nuxt)/)
+      
+      topics
     end
   end
 end

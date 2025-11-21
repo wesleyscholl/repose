@@ -16,14 +16,16 @@ Reposer is an intelligent CLI tool that uses AI to create GitHub repositories wi
 - **🤖 AI-Generated Content**: Multiple AI providers (Gemini, Ollama) or template-based fallback
 - **🎯 Smart Context Awareness**: Understands project purpose from name, language, and framework
 - **🔧 Interactive CLI**: Guided prompts for missing information with beautiful UI
-- **📝 Professional READMEs**: Creates comprehensive, well-structured documentation
-- **🏷️ Intelligent Topics**: Generates relevant tags and topics automatically
+- **📝 Professional READMEs**: Creates comprehensive, well-structured documentation with emojis
+- **🏷️ 20 Intelligent Topics**: Generates up to 20 relevant tags and topics automatically
+- **😊 Emoji Support**: Automatic emoji inclusion in descriptions and READMEs for visual appeal
+- **📄 License Selection**: Interactive license picker (MIT, Apache, GPL, BSD, MPL, Unlicense)
 - **👁️ Preview Mode**: See generated content before creating repository
 - **🔐 Secure Configuration**: Encrypted storage of API keys and tokens
-- **⚡ Multi-Language Support**: Built-in support for 10+ programming languages
+- **⚡ Multi-Language Support**: Built-in support for 15+ programming languages
 - **🎨 Framework Intelligence**: Recognizes and suggests popular frameworks
 - **🤖 Flexible AI Integration**: Choose between Gemini, Ollama, or template-based generation
-- **🧪 96.63% Test Coverage**: Production-ready with comprehensive testing
+- **🧪 90%+ Test Coverage**: Production-ready with comprehensive testing
 
 ## 🤖 AI Provider Options
 
@@ -106,14 +108,17 @@ reposer create api-server --language go --framework gin --private
 # Preview before creating
 reposer create ai-chatbot --language python --framework fastapi --dry-run
 
+# Specify license type
+reposer create api-server --language go --framework gin --license apache-2.0
+
 # Custom description and topics
 reposer create data-processor \
   --language python \
   --description "High-performance data processing pipeline" \
   --topics ml,data,etl,python
 
-# Framework-specific project
-reposer create blog-api --language ruby --framework rails --private
+# Framework-specific project with custom license
+reposer create blog-api --language ruby --framework rails --license gpl-3.0 --private
 ```
 
 ### Interactive Experience
@@ -122,26 +127,29 @@ $ reposer create awesome-api
 🎯 Reposer - AI Repository Creator
 ========================================
 Primary programming language: ruby
-Framework/Library: Rails  
+Framework/Library: Rails
+Choose a license: MIT License (Permissive, most popular)
 What will this project do? A REST API for user management
 
 📋 Generated Repository Content
 ----------------------------------------
 Name: awesome-api
-Description: A Ruby Rails project for user management
-Topics: ruby, rails, api, web, rest
+Description: 🚀 A Ruby Rails REST API for user management 💎
+Topics: ruby, rails, api, rest, web, backend, database, authentication, 
+        mvc, ruby-on-rails, sinatra, bundler, gem, postgresql, redis,
+        jwt, oauth, microservices, docker, kubernetes
 
 README Preview:
-# Awesome Api
+# 💎 Awesome Api
 
-A Ruby Rails project for user management with comprehensive
+🚀 A Ruby Rails project for user management with comprehensive
 API endpoints and authentication.
 
-## Features
-- User authentication and authorization
-- RESTful API design
-- Database integration
-- Comprehensive test coverage
+## ✨ Features
+- 🛠️ User authentication and authorization
+- 🌐 RESTful API design
+- 📊 Database integration
+- ✅ Comprehensive test coverage
 
 Create repository? (Y/n) y
 ✅ Repository created successfully!
@@ -197,16 +205,18 @@ Create a new repository with AI assistance.
 - `--language LANG` - Primary programming language
 - `--framework FRAMEWORK` - Framework or library to use  
 - `--description TEXT` - Custom description override
+- `--license LICENSE` - License type (mit, apache-2.0, gpl-3.0, bsd-3-clause, mpl-2.0, unlicense)
 - `--private` - Create private repository (default: public)
-- `--topics TOPIC1,TOPIC2` - Custom topics/tags
+- `--topics TOPIC1,TOPIC2` - Custom topics/tags (up to 20)
 - `--dry-run` - Preview without creating
 - `--template URL` - Use repository template
 
 **Examples:**
 ```bash
-repose create web-app --language typescript --framework react
-repose create microservice --language go --private --dry-run
-repose create ml-model --language python --topics ml,ai,data-science
+reposer create web-app --language typescript --framework react
+reposer create microservice --language go --license apache-2.0 --private
+reposer create ml-model --language python --topics ml,ai,data-science --dry-run
+reposer create api-server --language ruby --framework rails --license gpl-3.0
 ```
 
 ### `repose configure`
@@ -472,6 +482,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🏷️ Version History
 
+- **v1.2.0** (2025-11-21): Major upgrade with emoji support, 20-topic generation, license selection, and improved GitHub authentication
 - **v1.1.0** (2025-01-20): Published as `repo-composer` (gem name change), AI provider integration (Gemini + Ollama) with 96.63% test coverage
 - **v1.0.0** (2025-11-07): Production release with 98.39% test coverage (as `repose`)
 - **v0.1.0** (2024-11-07): Initial release with core functionality

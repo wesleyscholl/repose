@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-11-21
+
+### Added
+- **20 Topics Generation**: AI now generates up to 20 relevant topics/tags instead of 5-8
+  - Enhanced topic generation for comprehensive repository tagging
+  - Includes language ecosystem, framework, architecture, deployment, and best practices topics
+  - Fallback template generates intelligent topics based on language, framework, and purpose
+- **Emoji Support**: Automatic emoji inclusion for visual appeal
+  - Repository descriptions now include at least 2 relevant emojis
+  - README generation includes emojis in headers and sections
+  - Language-specific emojis (💎 Ruby, 🐍 Python, ⚡ JavaScript, etc.)
+  - Purpose-based emojis (🌐 API, 📊 Data, 🤖 AI/ML, etc.)
+- **License Selection**: Interactive license type selection
+  - Support for MIT, Apache 2.0, GPL 3.0, BSD 3-Clause, MPL 2.0, Unlicense
+  - Custom/Other license option
+  - License passed through to GitHub repository creation
+  - README generation includes selected license
+
+### Fixed
+- **GitHub Authentication**: Improved GitHub client token handling
+  - Now properly reads from `GITHUB_TOKEN` environment variable
+  - Better error messages for authentication failures
+  - Enhanced error handling for repository creation
+  - Support for GitHub API license templates
+- **Topic Limits**: Removed artificial 8-topic limit, now supports up to 20
+- **Context Propagation**: License now properly propagated through generation pipeline
+
+### Enhanced
+- **AI Providers**: Both Gemini and Ollama providers updated
+  - Better prompts for emoji and topic generation
+  - License-aware README generation
+  - Improved formatting and structure
+- **Fallback Templates**: Enhanced template-based generation
+  - More intelligent topic selection based on project characteristics
+  - Language ecosystem topics (npm, bundler, cargo, etc.)
+  - Framework-related topics (web, api, microservices, etc.)
+  - Purpose-based topic detection (ai, data, testing, security, etc.)
+
 ## [1.1.0] - 2025-01-20
 
 ### Changed - Gem Renamed

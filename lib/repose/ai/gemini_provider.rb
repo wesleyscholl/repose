@@ -121,33 +121,38 @@ module Repose
 
       def build_description_prompt(context)
         <<~PROMPT
-          Generate a concise, professional GitHub repository description (max 100 characters) for:
+          Generate a concise, professional GitHub repository description (max 120 characters) for:
           
           Repository name: #{context[:name]}
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
           
-          Return only the description text, no quotes or extra formatting.
+          IMPORTANT: Include at least 2 relevant emojis that represent the project's purpose or technology.
+          Example format: "🚀 Fast API server for data processing 📊"
+          
+          Return only the description text with emojis, no quotes or extra formatting.
         PROMPT
       end
 
       def build_topics_prompt(context)
         <<~PROMPT
-          Generate 5-8 relevant GitHub topics (keywords) for this repository:
+          Generate 20 relevant GitHub topics (keywords) for this repository:
           
           Repository name: #{context[:name]}
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
           
-          Return topics as comma-separated lowercase words (e.g., javascript, react, api, nodejs).
-          No quotes, no explanations, just the comma-separated list.
+          Include topics for: language, framework, use-case, architecture, deployment, testing, best practices.
+          Return topics as comma-separated lowercase words (e.g., javascript, react, api, nodejs, docker, ci-cd).
+          No quotes, no explanations, just the comma-separated list of 20 topics.
         PROMPT
       end
 
       def build_readme_prompt(context)
         title = context[:name].split(/[-_]/).map(&:capitalize).join(" ")
+        license = context[:license] || "MIT"
         
         <<~PROMPT
           Generate a comprehensive README.md for a GitHub repository with these details:
@@ -156,17 +161,18 @@ module Repose
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
+          License: #{license}
           
-          Include these sections:
-          - Title and brief description
-          - Features (3-5 bullet points)
-          - Installation instructions (language-specific)
-          - Usage examples with code blocks
-          - Contributing guidelines
-          - License (MIT)
+          Include these sections with relevant emojis:
+          - Title with emoji and brief description with emojis
+          - ✨ Features section (3-5 bullet points with emojis)
+          - 🚀 Installation instructions (language-specific)
+          - 💻 Usage examples with code blocks
+          - 🤝 Contributing guidelines
+          - 📄 License (#{license})
           
-          Use proper Markdown formatting. Be concise and professional.
-          Return only the README content, no extra commentary.
+          Use proper Markdown formatting with emojis throughout for visual appeal.
+          Be concise and professional. Return only the README content, no extra commentary.
         PROMPT
       end
 
@@ -185,8 +191,8 @@ module Repose
         # Split by commas and clean up
         topics = text.split(",").map(&:strip).map(&:downcase)
         
-        # Remove duplicates and limit to 8
-        topics.uniq.first(8)
+        # Remove duplicates and limit to 20
+        topics.uniq.first(20)
       end
     end
   end

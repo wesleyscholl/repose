@@ -5,9 +5,9 @@ require "octokit"
 module Repose
   class GitHubClient
     def initialize
-      token = Repose.config.github_token || ENV["GITHUB_TOKEN"]
+      token = Repose.config.github_token || ENV["REPOSE_TOKEN"]
       
-      raise Errors::ConfigurationError, "GitHub token not configured. Set GITHUB_TOKEN environment variable or run 'repose configure'" if token.nil? || token.empty?
+      raise Errors::ConfigurationError, "GitHub token not configured. Set REPOSE_TOKEN environment variable or run 'repose configure'" if token.nil? || token.empty?
       
       @client = Octokit::Client.new(access_token: token)
       @client.auto_paginate = true

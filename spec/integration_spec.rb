@@ -46,6 +46,8 @@ RSpec.describe "Integration Tests", type: :integration do
       # Set up mocked responses
       allow(mock_ai_generator).to receive(:generate).and_return(ai_content)
       allow(mock_github_client).to receive(:create_repository).and_return(github_repo)
+      allow(mock_github_client).to receive(:available_namespaces)
+        .and_return([{ name: "testuser (personal)", value: "testuser" }])
       
       # Set up valid configuration
       test_config.github_token = "test_github_token"
@@ -67,20 +69,24 @@ RSpec.describe "Integration Tests", type: :integration do
         description: "A Ruby CLI project for testing integration",
         private: false,
         topics: ["ruby", "cli", "test"],
-        readme: "# Integration Test Repo\n\nThis is a test repository."
+        readme: "# Integration Test Repo\n\nThis is a test repository.",
+        license: anything,
+        owner: nil
       ).and_return(github_repo)
 
       # Execute the workflow
       cli = Repose::CLI.new
       cli.options = {
-        "language" => "ruby",
-        "dry_run" => false
+        language: "ruby",
+        dry_run: false,
+        private: false
       }
-      
+
       # Mock user interactions
       prompt = instance_double(TTY::Prompt)
       allow(TTY::Prompt).to receive(:new).and_return(prompt)
       allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("None")
+      allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
       allow(prompt).to receive(:ask).with("What will this project do? (optional):").and_return("testing integration")
       allow(prompt).to receive(:yes?).with("Create repository?").and_return(true)
       
@@ -178,6 +184,8 @@ RSpec.describe "Integration Tests", type: :integration do
       
       allow(mock_github_client).to receive(:create_repository)
         .and_raise(Repose::Errors::GitHubError.new("Repository already exists"))
+      allow(mock_github_client).to receive(:available_namespaces)
+        .and_return([{ name: "testuser (personal)", value: "testuser" }])
       
       # Mock user interactions
       prompt = instance_double(TTY::Prompt)
@@ -190,22 +198,27 @@ RSpec.describe "Integration Tests", type: :integration do
       spinner = instance_double(TTY::Spinner)
       allow(TTY::Spinner).to receive(:new).and_return(spinner)
       allow(spinner).to receive(:auto_spin)
+      allow(spinner).to receive(:success)
       allow(spinner).to receive(:error)
-      
+
       # Silence output
       allow($stdout).to receive(:puts)
       allow($stderr).to receive(:puts)
-      
+
       cli = Repose::CLI.new
       cli.options = { "dry_run" => false }
-      
+
       expect { cli.create("test-repo") }.to raise_error(SystemExit)
       expect(spinner).to have_received(:error)
     end
 
     it "handles AI generation errors gracefully" do
+      mock_github_client = instance_double(Repose::GitHubClient)
       mock_ai_generator = instance_double(Repose::AIGenerator)
+      allow(Repose::GitHubClient).to receive(:new).and_return(mock_github_client)
       allow(Repose::AIGenerator).to receive(:new).and_return(mock_ai_generator)
+      allow(mock_github_client).to receive(:available_namespaces)
+        .and_return([{ name: "testuser (personal)", value: "testuser" }])
       allow(mock_ai_generator).to receive(:generate)
         .and_raise(StandardError.new("AI service unavailable"))
       
@@ -219,15 +232,16 @@ RSpec.describe "Integration Tests", type: :integration do
       spinner = instance_double(TTY::Spinner)
       allow(TTY::Spinner).to receive(:new).and_return(spinner)
       allow(spinner).to receive(:auto_spin)
+      allow(spinner).to receive(:success)
       allow(spinner).to receive(:error)
-      
+
       # Silence output
       allow($stdout).to receive(:puts)
       allow($stderr).to receive(:puts)
-      
+
       cli = Repose::CLI.new
       cli.options = { "dry_run" => false }
-      
+
       expect { cli.create("test-repo") }.to raise_error(SystemExit)
       expect(spinner).to have_received(:error)
     end

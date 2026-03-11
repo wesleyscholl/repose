@@ -4,23 +4,89 @@ RSpec.describe Repose::GitHubClient do
   let(:config) { instance_double(Repose::Config, github_token: "gh_token_123") }
   let(:client) { described_class.new }
   let(:octokit_client) { instance_double(Octokit::Client) }
+  let(:user_data) { OpenStruct.new(login: "testuser", name: "Test User", email: "test@example.com") }
 
   before do
     allow(Repose).to receive(:config).and_return(config)
     allow(Octokit::Client).to receive(:new).with(access_token: "gh_token_123").and_return(octokit_client)
+    allow(octokit_client).to receive(:auto_paginate=)
   end
 
   describe "#initialize" do
     it "creates an Octokit client with the configured token" do
+      client # trigger lazy let instantiation
       expect(Octokit::Client).to have_received(:new).with(access_token: "gh_token_123")
+    end
+
+    context "when no token is configured" do
+      let(:config) { instance_double(Repose::Config, github_token: nil) }
+
+      before { allow(ENV).to receive(:[]).with("REPOSE_TOKEN").and_return(nil) }
+
+      it "raises a ConfigurationError" do
+        expect { described_class.new }.to raise_error(Repose::Errors::ConfigurationError)
+      end
+    end
+  end
+
+  describe "#available_namespaces" do
+    let(:org1) { OpenStruct.new(login: "my-org") }
+    let(:org2) { OpenStruct.new(login: "another-org") }
+
+    before do
+      allow(octokit_client).to receive(:user).and_return(user_data)
+    end
+
+    context "when user has no org memberships" do
+      before { allow(octokit_client).to receive(:organizations).and_return([]) }
+
+      it "returns only the personal account namespace" do
+        result = client.available_namespaces
+        expect(result).to eq([{ name: "testuser (personal)", value: "testuser" }])
+      end
+    end
+
+    context "when user belongs to multiple orgs" do
+      before { allow(octokit_client).to receive(:organizations).and_return([org1, org2]) }
+
+      it "returns personal account first, then orgs" do
+        result = client.available_namespaces
+        expect(result.first).to eq({ name: "testuser (personal)", value: "testuser" })
+        expect(result).to include({ name: "my-org", value: "my-org" })
+        expect(result).to include({ name: "another-org", value: "another-org" })
+      end
+
+      it "returns all namespaces" do
+        result = client.available_namespaces
+        expect(result.size).to eq(3)
+      end
+    end
+
+    context "when GitHub returns an authentication error" do
+      before { allow(octokit_client).to receive(:user).and_raise(Octokit::Unauthorized.new) }
+
+      it "raises an AuthenticationError" do
+        expect { client.available_namespaces }.to raise_error(Repose::Errors::AuthenticationError)
+      end
+    end
+
+    context "when GitHub returns a generic error" do
+      before do
+        allow(octokit_client).to receive(:user).and_return(user_data)
+        allow(octokit_client).to receive(:organizations).and_raise(Octokit::Error.new)
+      end
+
+      it "raises a GitHubError" do
+        expect { client.available_namespaces }.to raise_error(Repose::Errors::GitHubError, /Failed to fetch organizations/)
+      end
     end
   end
 
   describe "#create_repository" do
     let(:repo_data) do
       OpenStruct.new(
-        full_name: "user/test-repo",
-        html_url: "https://github.com/user/test-repo",
+        full_name: "testuser/test-repo",
+        html_url: "https://github.com/testuser/test-repo",
         default_branch: "main"
       )
     end
@@ -37,6 +103,7 @@ RSpec.describe Repose::GitHubClient do
 
     context "when repository creation succeeds" do
       before do
+        allow(octokit_client).to receive(:user).and_return(user_data)
         allow(octokit_client).to receive(:create_repository).and_return(repo_data)
         allow(octokit_client).to receive(:replace_all_topics)
         allow(octokit_client).to receive(:create_contents)
@@ -47,11 +114,23 @@ RSpec.describe Repose::GitHubClient do
 
         expect(octokit_client).to have_received(:create_repository).with(
           "test-repo",
-          {
+          hash_including(
             description: "A test repository",
             private: false,
-            auto_init: false
-          }
+            auto_init: false,
+            has_issues: true,
+            has_wiki: true,
+            has_projects: true
+          )
+        )
+      end
+
+      it "does not include organization key for a personal repo" do
+        client.create_repository(**create_params)
+
+        expect(octokit_client).to have_received(:create_repository).with(
+          "test-repo",
+          hash_excluding(:organization)
         )
       end
 
@@ -59,8 +138,7 @@ RSpec.describe Repose::GitHubClient do
         client.create_repository(**create_params)
 
         expect(octokit_client).to have_received(:replace_all_topics).with(
-          "user/test-repo",
-          ["ruby", "cli"]
+          "testuser/test-repo", ["ruby", "cli"]
         )
       end
 
@@ -68,9 +146,9 @@ RSpec.describe Repose::GitHubClient do
         client.create_repository(**create_params)
 
         expect(octokit_client).to have_received(:create_contents).with(
-          "user/test-repo",
+          "testuser/test-repo",
           "README.md",
-          "Initial README",
+          "Initial commit: Add README",
           "# Test Repo\n\nThis is a test.",
           branch: "main"
         )
@@ -82,69 +160,112 @@ RSpec.describe Repose::GitHubClient do
       end
 
       context "when no topics are provided" do
-        let(:create_params_no_topics) do
-          create_params.merge(topics: [])
-        end
-
         it "does not call replace_all_topics" do
-          client.create_repository(**create_params_no_topics)
+          client.create_repository(**create_params.merge(topics: []))
           expect(octokit_client).not_to have_received(:replace_all_topics)
         end
       end
 
       context "when no README is provided" do
-        let(:create_params_no_readme) do
-          create_params.merge(readme: nil)
-        end
-
         it "does not create README file" do
-          client.create_repository(**create_params_no_readme)
+          client.create_repository(**create_params.merge(readme: nil))
           expect(octokit_client).not_to have_received(:create_contents)
         end
       end
 
-      context "when creating private repository" do
-        let(:private_params) do
-          create_params.merge(private: true)
-        end
-
+      context "when creating a private repository" do
         it "sets private flag to true" do
-          client.create_repository(**private_params)
+          client.create_repository(**create_params.merge(private: true))
 
           expect(octokit_client).to have_received(:create_repository).with(
-            "test-repo",
-            {
-              description: "A test repository",
-              private: true,
-              auto_init: false
-            }
+            "test-repo", hash_including(private: true)
+          )
+        end
+      end
+
+      context "when owner is an organization" do
+        let(:org_repo_data) do
+          OpenStruct.new(
+            full_name: "my-org/test-repo",
+            html_url: "https://github.com/my-org/test-repo",
+            default_branch: "main"
+          )
+        end
+
+        before do
+          allow(octokit_client).to receive(:create_repository).and_return(org_repo_data)
+        end
+
+        it "passes organization key to Octokit" do
+          client.create_repository(**create_params.merge(owner: "my-org"))
+
+          expect(octokit_client).to have_received(:create_repository).with(
+            "test-repo", hash_including(organization: "my-org")
+          )
+        end
+
+        it "returns the org repository" do
+          result = client.create_repository(**create_params.merge(owner: "my-org"))
+          expect(result.full_name).to eq("my-org/test-repo")
+        end
+      end
+
+      context "when owner matches the authenticated user login" do
+        it "does not pass organization key" do
+          client.create_repository(**create_params.merge(owner: "testuser"))
+
+          expect(octokit_client).to have_received(:create_repository).with(
+            "test-repo", hash_excluding(:organization)
+          )
+        end
+      end
+
+      context "when a license is specified" do
+        it "includes the normalized license template" do
+          client.create_repository(**create_params.merge(license: "mit"))
+
+          expect(octokit_client).to have_received(:create_repository).with(
+            "test-repo", hash_including(license_template: "mit")
           )
         end
       end
     end
 
-    context "when GitHub API returns an error" do
+    context "when GitHub API returns Octokit::UnprocessableEntity" do
       before do
+        allow(octokit_client).to receive(:user).and_return(user_data)
         allow(octokit_client).to receive(:create_repository)
           .and_raise(Octokit::UnprocessableEntity.new)
       end
 
-      it "raises a GitHubError" do
+      it "raises a GitHubError with 'already exist' message" do
         expect {
           client.create_repository(**create_params)
-        }.to raise_error(Repose::Errors::GitHubError, /GitHub API error/)
+        }.to raise_error(Repose::Errors::GitHubError, /Repository creation failed/)
+      end
+    end
+
+    context "when GitHub API returns Octokit::Unauthorized" do
+      before do
+        allow(octokit_client).to receive(:user).and_return(user_data)
+        allow(octokit_client).to receive(:create_repository)
+          .and_raise(Octokit::Unauthorized.new)
+      end
+
+      it "raises an AuthenticationError" do
+        expect {
+          client.create_repository(**create_params)
+        }.to raise_error(Repose::Errors::AuthenticationError)
       end
     end
   end
 
   describe "#repository_exists?" do
-    let(:user) { OpenStruct.new(login: "testuser") }
-
     before do
-      allow(octokit_client).to receive(:user).and_return(user)
+      allow(octokit_client).to receive(:user).and_return(user_data)
     end
 
-    context "when repository exists" do
+    context "when repository exists under personal account" do
       before do
         allow(octokit_client).to receive(:repository?).with("testuser/existing-repo").and_return(true)
       end
@@ -174,17 +295,19 @@ RSpec.describe Repose::GitHubClient do
         expect(client.repository_exists?("not-found-repo")).to be false
       end
     end
+
+    context "when an explicit owner is provided" do
+      before do
+        allow(octokit_client).to receive(:repository?).with("my-org/org-repo").and_return(true)
+      end
+
+      it "checks under the specified owner" do
+        expect(client.repository_exists?("org-repo", "my-org")).to be true
+      end
+    end
   end
 
   describe "#user_info" do
-    let(:user_data) do
-      OpenStruct.new(
-        login: "testuser",
-        name: "Test User",
-        email: "test@example.com"
-      )
-    end
-
     context "when API call succeeds" do
       before do
         allow(octokit_client).to receive(:user).and_return(user_data)
@@ -197,9 +320,21 @@ RSpec.describe Repose::GitHubClient do
       end
     end
 
-    context "when API call fails" do
+    context "when API call is unauthorized" do
       before do
         allow(octokit_client).to receive(:user).and_raise(Octokit::Unauthorized.new)
+      end
+
+      it "raises an AuthenticationError" do
+        expect {
+          client.user_info
+        }.to raise_error(Repose::Errors::AuthenticationError, /Failed to authenticate/)
+      end
+    end
+
+    context "when API call raises a generic error" do
+      before do
+        allow(octokit_client).to receive(:user).and_raise(Octokit::Error.new)
       end
 
       it "raises a GitHubError" do

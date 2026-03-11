@@ -20,6 +20,7 @@ Reposer is an intelligent CLI tool that uses AI to create GitHub repositories wi
 - **🏷️ 20 Intelligent Topics**: Generates up to 20 relevant tags and topics automatically
 - **😊 Emoji Support**: Automatic emoji inclusion in descriptions and READMEs for visual appeal
 - **📄 License Selection**: Interactive license picker (MIT, Apache, GPL, BSD, MPL, Unlicense)
+- **🏢 Organization Support**: Choose to create repos under your personal account or any GitHub org you belong to
 - **🗂️ Language-Specific Project Files**: Auto-generates boilerplate files (go.mod, package.json, requirements.txt, etc.)
 - **👁️ Preview Mode**: See generated content before creating repository
 - **🔐 Secure Configuration**: Encrypted storage of API keys and tokens
@@ -112,6 +113,12 @@ reposer create ai-chatbot --language python --framework fastapi --dry-run
 # Specify license type
 reposer create api-server --language go --framework gin --license apache-2.0
 
+# Create under a GitHub organization
+reposer create team-tool --language ruby --org my-company
+
+# Create under an org with full options
+reposer create infra-scripts --language python --org devops-team --private --license mit
+
 # Custom description and topics
 reposer create data-processor \
   --language python \
@@ -127,6 +134,7 @@ reposer create blog-api --language ruby --framework rails --license gpl-3.0 --pr
 $ reposer create awesome-api
 🎯 Reposer - AI Repository Creator
 ========================================
+Create repository under: yourusername (personal)
 Primary programming language: ruby
 Framework/Library: Rails
 Choose a license: MIT License (Permissive, most popular)
@@ -134,6 +142,7 @@ What will this project do? A REST API for user management
 
 📋 Generated Repository Content
 ----------------------------------------
+Destination: yourusername/awesome-api
 Name: awesome-api
 Description: 🚀 A Ruby Rails REST API for user management 💎
 Topics: ruby, rails, api, rest, web, backend, database, authentication, 
@@ -204,9 +213,10 @@ Create a new repository with AI assistance.
 
 **Options:**
 - `--language LANG` - Primary programming language
-- `--framework FRAMEWORK` - Framework or library to use  
+- `--framework FRAMEWORK` - Framework or library to use
 - `--description TEXT` - Custom description override
 - `--license LICENSE` - License type (mit, apache-2.0, gpl-3.0, bsd-3-clause, mpl-2.0, unlicense)
+- `--org ORG` - GitHub organization or user login to create the repository under (skips interactive selection)
 - `--private` - Create private repository (default: public)
 - `--topics TOPIC1,TOPIC2` - Custom topics/tags (up to 20)
 - `--dry-run` - Preview without creating
@@ -218,6 +228,7 @@ reposer create web-app --language typescript --framework react
 reposer create microservice --language go --license apache-2.0 --private
 reposer create ml-model --language python --topics ml,ai,data-science --dry-run
 reposer create api-server --language ruby --framework rails --license gpl-3.0
+reposer create team-tool --language python --org my-company
 ```
 
 ### `repose configure`

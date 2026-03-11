@@ -21,6 +21,7 @@ module Repose
         $ repose create my-awesome-project
         $ repose create web-scraper --language ruby --framework rails
         $ repose create api-server --license apache-2.0
+        $ repose create team-tool --org my-org
     DESC
     option :language, type: :string, desc: "Primary programming language"
     option :framework, type: :string, desc: "Framework or library to use"
@@ -30,6 +31,7 @@ module Repose
     option :topics, type: :array, desc: "Custom topics/tags"
     option :license, type: :string, desc: "License type (mit, apache-2.0, gpl-3.0, bsd-3-clause, unlicense, etc.)"
     option :dry_run, type: :boolean, default: false, desc: "Preview without creating"
+    option :org, type: :string, desc: "Organization or user login to create the repository under (skips interactive selection)"
     def create(name = nil)
       pastel = Pastel.new
       prompt = TTY::Prompt.new
@@ -42,9 +44,12 @@ module Repose
         q.validate(/\A[a-zA-Z0-9._-]+\z/, "Invalid repository name format")
       end
 
+      # Determine the owner (org or personal account)
+      owner = options[:org] || select_namespace(prompt, pastel)
+
       # Gather context
       context = gather_context(name, options, prompt)
-      
+
       # Generate AI content
       spinner = TTY::Spinner.new("[:spinner] Generating repository content with AI...", format: :dots)
       spinner.auto_spin
@@ -59,12 +64,12 @@ module Repose
       end
 
       # Display preview
-      display_preview(ai_content, pastel)
+      display_preview(ai_content, pastel, owner)
 
       # Confirm creation
       unless options[:dry_run]
         if prompt.yes?("Create repository?")
-          create_repository(name, ai_content, options, pastel)
+          create_repository(name, ai_content, options, pastel, owner)
         else
           puts pastel.yellow("Repository creation cancelled.")
         end
@@ -97,6 +102,25 @@ module Repose
     end
 
     private
+
+    # Fetches the authenticated user's personal account and all orgs they belong
+    # to, then prompts the user to choose where to create the new repository.
+    # Returns nil (personal account default) when there is only one namespace
+    # available or when the namespace list cannot be fetched.
+    def select_namespace(prompt, pastel)
+      github_client = GitHubClient.new
+      namespaces = github_client.available_namespaces
+
+      # No choice needed when the user has no org memberships
+      return nil if namespaces.size == 1
+
+      selected = prompt.select("Create repository under:", namespaces)
+      # nil signals "personal account" to create_repository
+      selected == namespaces.first[:value] ? nil : selected
+    rescue Errors::AuthenticationError, Errors::GitHubError => e
+      puts pastel.yellow("Warning: could not fetch organizations (#{e.message}). Defaulting to personal account.")
+      nil
+    end
 
     def gather_context(name, options, prompt)
       context = {
@@ -134,7 +158,7 @@ module Repose
           { name: "Other/Custom", value: "other" }
         ]
         context[:license] = prompt.select("Choose a license:", licenses)
-        
+
         if context[:license] == "other"
           context[:license] = prompt.ask("Enter license name:", default: "MIT")
         end
@@ -142,7 +166,7 @@ module Repose
 
       # Additional context
       context[:purpose] = prompt.ask("What will this project do? (optional):")
-      
+
       context
     end
 
@@ -167,21 +191,23 @@ module Repose
       frameworks[language] || []
     end
 
-    def display_preview(content, pastel)
+    def display_preview(content, pastel, owner = nil)
       puts "\n" + pastel.cyan("📋 Generated Repository Content")
       puts pastel.dim("-" * 40)
-      
+
+      destination = owner ? "#{owner}/#{content[:name]}" : content[:name]
+      puts pastel.bold("Destination: ") + destination
       puts pastel.bold("Name: ") + content[:name]
       puts pastel.bold("Description: ") + content[:description]
       puts pastel.bold("License: ") + (content[:license] || "MIT").upcase
       puts pastel.bold("Topics: ") + content[:topics].join(", ")
-      
+
       puts "\n" + pastel.bold("README Preview:")
       puts pastel.dim(content[:readme][0..300] + "...")
       puts
     end
 
-    def create_repository(name, content, options, pastel)
+    def create_repository(name, content, options, pastel, owner = nil)
       spinner = TTY::Spinner.new("[:spinner] Creating GitHub repository...", format: :dots)
       spinner.auto_spin
 
@@ -193,22 +219,23 @@ module Repose
           private: options[:private],
           topics: content[:topics],
           readme: content[:readme],
-          license: content[:license]
+          license: content[:license],
+          owner: owner
         )
-        
+
         spinner.success("✅")
-        
+
         # Create language-specific project files
         project_files = ProjectFilesGenerator.generate(
           language: content[:language],
           framework: content[:framework],
           name: name
         )
-        
+
         if project_files.any?
           file_spinner = TTY::Spinner.new("[:spinner] Adding project files...", format: :dots)
           file_spinner.auto_spin
-          
+
           project_files.each do |file_path, file_content|
             github_client.create_file(
               repo.full_name,
@@ -217,10 +244,10 @@ module Repose
               file_content
             )
           end
-          
+
           file_spinner.success("✅")
         end
-        
+
         puts pastel.green("Repository created successfully!")
         puts pastel.cyan("🔗 #{repo.html_url}")
       rescue => e

@@ -8,16 +8,20 @@ RSpec.describe Repose::CLI do
   let(:prompt) { instance_double(TTY::Prompt) }
   let(:spinner) { instance_double(TTY::Spinner) }
 
+  # Default: user has no org memberships — select_namespace returns nil without prompting
+  let(:personal_namespaces) { [{ name: "testuser (personal)", value: "testuser" }] }
+
   before do
     allow(Repose).to receive(:config).and_return(config)
     allow(Repose::AIGenerator).to receive(:new).and_return(ai_generator)
     allow(Repose::GitHubClient).to receive(:new).and_return(github_client)
+    allow(github_client).to receive(:available_namespaces).and_return(personal_namespaces)
     allow(TTY::Prompt).to receive(:new).and_return(prompt)
     allow(TTY::Spinner).to receive(:new).and_return(spinner)
     allow(spinner).to receive(:auto_spin)
     allow(spinner).to receive(:success)
     allow(spinner).to receive(:error)
-    
+
     # Silence output during tests
     allow($stdout).to receive(:puts)
     allow($stderr).to receive(:puts)
@@ -88,25 +92,34 @@ RSpec.describe Repose::CLI do
         name: "test-repo",
         description: "A test repository",
         topics: ["ruby", "test"],
-        readme: "# Test Repo\n\nThis is a test repository."
+        readme: "# Test Repo\n\nThis is a test repository.",
+        language: "ruby",
+        framework: nil,
+        license: "mit"
       }
     end
 
     let(:repo_result) do
-      OpenStruct.new(html_url: "https://github.com/user/test-repo")
+      OpenStruct.new(
+        full_name: "testuser/test-repo",
+        html_url: "https://github.com/testuser/test-repo"
+      )
     end
 
     before do
       allow(ai_generator).to receive(:generate).and_return(ai_content)
       allow(github_client).to receive(:create_repository).and_return(repo_result)
+      allow(github_client).to receive(:create_file)
     end
 
+    # Use symbol keys so options[:key] resolves correctly (Thor does not
+    # auto-convert to HashWithIndifferentAccess when options= is set directly)
     context "when repository name is provided as argument" do
-      let(:options) { { "language" => "ruby", "dry_run" => false } }
+      let(:options) { { language: "ruby", dry_run: false } }
 
       before do
-        allow(prompt).to receive(:select).with("Primary programming language:", anything, anything).and_return("ruby")
         allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("None")
+        allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
         allow(prompt).to receive(:ask).with("What will this project do? (optional):").and_return("A test project")
         allow(prompt).to receive(:yes?).with("Create repository?").and_return(true)
       end
@@ -133,14 +146,23 @@ RSpec.describe Repose::CLI do
 
         expect(github_client).to have_received(:create_repository)
       end
+
+      it "passes nil owner when user only has personal account" do
+        cli.options = options
+        cli.create("test-repo")
+
+        expect(github_client).to have_received(:create_repository).with(
+          hash_including(owner: nil)
+        )
+      end
     end
 
     context "when repository name is not provided" do
-      let(:options) { { "dry_run" => false } }
+      let(:options) { { dry_run: false } }
 
       before do
         allow(prompt).to receive(:ask).with("Repository name:", anything).and_return("prompted-repo")
-        allow(prompt).to receive(:select).and_return("ruby", "None")
+        allow(prompt).to receive(:select).and_return("ruby", "None", "mit")
         allow(prompt).to receive(:ask).with("What will this project do? (optional):").and_return("")
         allow(prompt).to receive(:yes?).and_return(true)
       end
@@ -154,10 +176,11 @@ RSpec.describe Repose::CLI do
     end
 
     context "when language is provided in options" do
-      let(:options) { { "language" => "python", "dry_run" => false } }
+      let(:options) { { language: "python", dry_run: false } }
 
       before do
         allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("None")
+        allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
         allow(prompt).to receive(:ask).and_return("")
         allow(prompt).to receive(:yes?).and_return(true)
       end
@@ -180,9 +203,10 @@ RSpec.describe Repose::CLI do
     end
 
     context "when framework is provided in options" do
-      let(:options) { { "language" => "ruby", "framework" => "rails", "dry_run" => false } }
+      let(:options) { { language: "ruby", framework: "rails", dry_run: false } }
 
       before do
+        allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
         allow(prompt).to receive(:ask).and_return("")
         allow(prompt).to receive(:yes?).and_return(true)
       end
@@ -204,12 +228,112 @@ RSpec.describe Repose::CLI do
       end
     end
 
-    context "when dry_run option is true" do
-      let(:options) { { "language" => "ruby", "dry_run" => true } }
+    context "when --org option is specified" do
+      let(:options) { { language: "ruby", org: "my-org", dry_run: false } }
 
       before do
-        allow(prompt).to receive(:select).and_return("None")
+        allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("None")
+        allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
         allow(prompt).to receive(:ask).and_return("")
+        allow(prompt).to receive(:yes?).and_return(true)
+      end
+
+      it "does not prompt for namespace" do
+        cli.options = options
+        cli.create("test-repo")
+
+        expect(prompt).not_to have_received(:select).with("Create repository under:", anything)
+      end
+
+      it "passes the specified org as owner to create_repository" do
+        cli.options = options
+        cli.create("test-repo")
+
+        expect(github_client).to have_received(:create_repository).with(
+          hash_including(owner: "my-org")
+        )
+      end
+    end
+
+    context "when user has multiple namespaces (orgs)" do
+      let(:multi_namespaces) do
+        [
+          { name: "testuser (personal)", value: "testuser" },
+          { name: "my-org", value: "my-org" }
+        ]
+      end
+      let(:options) { { language: "ruby", dry_run: false } }
+
+      before do
+        allow(github_client).to receive(:available_namespaces).and_return(multi_namespaces)
+        allow(prompt).to receive(:select).with("Create repository under:", multi_namespaces).and_return("my-org")
+        allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("None")
+        allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
+        allow(prompt).to receive(:ask).and_return("")
+        allow(prompt).to receive(:yes?).and_return(true)
+      end
+
+      it "prompts for namespace selection" do
+        cli.options = options
+        cli.create("test-repo")
+
+        expect(prompt).to have_received(:select).with("Create repository under:", multi_namespaces)
+      end
+
+      it "passes the selected org as owner" do
+        cli.options = options
+        cli.create("test-repo")
+
+        expect(github_client).to have_received(:create_repository).with(
+          hash_including(owner: "my-org")
+        )
+      end
+
+      context "when user selects the personal account" do
+        before do
+          allow(prompt).to receive(:select).with("Create repository under:", multi_namespaces).and_return("testuser")
+        end
+
+        it "passes nil as owner" do
+          cli.options = options
+          cli.create("test-repo")
+
+          expect(github_client).to have_received(:create_repository).with(
+            hash_including(owner: nil)
+          )
+        end
+      end
+    end
+
+    context "when namespace fetching fails" do
+      let(:options) { { language: "ruby", dry_run: false } }
+
+      before do
+        allow(github_client).to receive(:available_namespaces)
+          .and_raise(Repose::Errors::GitHubError.new("API error"))
+        allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("None")
+        allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
+        allow(prompt).to receive(:ask).and_return("")
+        allow(prompt).to receive(:yes?).and_return(true)
+      end
+
+      it "falls back to personal account (nil owner) and continues" do
+        cli.options = options
+        cli.create("test-repo")
+
+        expect(github_client).to have_received(:create_repository).with(
+          hash_including(owner: nil)
+        )
+      end
+    end
+
+    context "when dry_run option is true" do
+      let(:options) { { language: "ruby", dry_run: true } }
+
+      before do
+        allow(prompt).to receive(:select).and_return("None", "mit")
+        allow(prompt).to receive(:ask).and_return("")
+        allow(prompt).to receive(:yes?)
       end
 
       it "does not prompt for confirmation" do
@@ -228,10 +352,10 @@ RSpec.describe Repose::CLI do
     end
 
     context "when user declines to create repository" do
-      let(:options) { { "language" => "ruby", "dry_run" => false } }
+      let(:options) { { language: "ruby", dry_run: false } }
 
       before do
-        allow(prompt).to receive(:select).and_return("None")
+        allow(prompt).to receive(:select).and_return("None", "mit")
         allow(prompt).to receive(:ask).and_return("")
         allow(prompt).to receive(:yes?).and_return(false)
       end
@@ -246,13 +370,13 @@ RSpec.describe Repose::CLI do
 
     context "when AI generation fails" do
       before do
-        allow(prompt).to receive(:select).and_return("ruby", "None")
+        allow(prompt).to receive(:select).and_return("ruby", "None", "mit")
         allow(prompt).to receive(:ask).and_return("")
         allow(ai_generator).to receive(:generate).and_raise(StandardError.new("AI failed"))
       end
 
       it "handles the error gracefully" do
-        cli.options = { "dry_run" => false }
+        cli.options = { dry_run: false }
 
         expect { cli.create("test-repo") }.to raise_error(SystemExit)
         expect(spinner).to have_received(:error)
@@ -261,7 +385,7 @@ RSpec.describe Repose::CLI do
 
     context "when repository creation fails" do
       before do
-        allow(prompt).to receive(:select).and_return("ruby", "None")
+        allow(prompt).to receive(:select).and_return("ruby", "None", "mit")
         allow(prompt).to receive(:ask).and_return("")
         allow(prompt).to receive(:yes?).and_return(true)
         allow(github_client).to receive(:create_repository)
@@ -269,7 +393,7 @@ RSpec.describe Repose::CLI do
       end
 
       it "handles the error gracefully" do
-        cli.options = { "dry_run" => false }
+        cli.options = { dry_run: false }
 
         expect { cli.create("test-repo") }.to raise_error(SystemExit)
         expect(spinner).to have_received(:error)
@@ -284,6 +408,7 @@ RSpec.describe Repose::CLI do
       before do
         allow(prompt).to receive(:select).with("Primary programming language:", anything, anything).and_return("go")
         allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("Gin")
+        allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
         allow(prompt).to receive(:ask).with("What will this project do? (optional):").and_return("API server")
       end
 
@@ -311,6 +436,72 @@ RSpec.describe Repose::CLI do
       it "returns empty array for unknown language" do
         suggestions = cli.send(:framework_suggestions, "unknown")
         expect(suggestions).to eq([])
+      end
+    end
+
+    describe "#select_namespace" do
+      # Pastel uses method_missing for color methods, so use a plain double
+      let(:pastel) { double("pastel") }
+
+      before do
+        allow(pastel).to receive(:yellow).and_return("warning")
+      end
+
+      context "when user has no orgs (single namespace)" do
+        before do
+          allow(github_client).to receive(:available_namespaces)
+            .and_return([{ name: "testuser (personal)", value: "testuser" }])
+          allow(prompt).to receive(:select)
+        end
+
+        it "returns nil without prompting" do
+          result = cli.send(:select_namespace, prompt, pastel)
+          expect(result).to be_nil
+          expect(prompt).not_to have_received(:select).with("Create repository under:", anything)
+        end
+      end
+
+      context "when user has orgs" do
+        let(:namespaces) do
+          [
+            { name: "testuser (personal)", value: "testuser" },
+            { name: "my-org", value: "my-org" }
+          ]
+        end
+
+        before do
+          allow(github_client).to receive(:available_namespaces).and_return(namespaces)
+        end
+
+        it "prompts user to select a namespace" do
+          allow(prompt).to receive(:select).with("Create repository under:", namespaces).and_return("my-org")
+          cli.send(:select_namespace, prompt, pastel)
+          expect(prompt).to have_received(:select).with("Create repository under:", namespaces)
+        end
+
+        it "returns the selected org login" do
+          allow(prompt).to receive(:select).with("Create repository under:", namespaces).and_return("my-org")
+          result = cli.send(:select_namespace, prompt, pastel)
+          expect(result).to eq("my-org")
+        end
+
+        it "returns nil when user selects their personal account" do
+          allow(prompt).to receive(:select).with("Create repository under:", namespaces).and_return("testuser")
+          result = cli.send(:select_namespace, prompt, pastel)
+          expect(result).to be_nil
+        end
+      end
+
+      context "when fetching namespaces raises an error" do
+        before do
+          allow(github_client).to receive(:available_namespaces)
+            .and_raise(Repose::Errors::AuthenticationError.new("bad token"))
+        end
+
+        it "returns nil (falls back to personal account)" do
+          result = cli.send(:select_namespace, prompt, pastel)
+          expect(result).to be_nil
+        end
       end
     end
   end

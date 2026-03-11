@@ -6,15 +6,33 @@ module Repose
   class GitHubClient
     def initialize
       token = Repose.config.github_token || ENV["REPOSE_TOKEN"]
-      
+
       raise Errors::ConfigurationError, "GitHub token not configured. Set REPOSE_TOKEN environment variable or run 'repose configure'" if token.nil? || token.empty?
-      
+
       @client = Octokit::Client.new(access_token: token)
       @client.auto_paginate = true
     end
 
-    def create_repository(name:, description:, private: false, topics: [], readme: nil, license: nil)
-      # Create the repository with license template if specified
+    # Returns an array of namespace hashes (personal account + orgs) the
+    # authenticated user can create repositories under.  Each element has the
+    # shape: { name: "display label", value: "login" }.
+    def available_namespaces
+      user = @client.user
+      orgs = @client.organizations
+
+      namespaces = [{ name: "#{user.login} (personal)", value: user.login }]
+      orgs.each do |org|
+        namespaces << { name: org.login, value: org.login }
+      end
+
+      namespaces
+    rescue Octokit::Unauthorized => e
+      raise Errors::AuthenticationError, "GitHub authentication failed: #{e.message}"
+    rescue Octokit::Error => e
+      raise Errors::GitHubError, "Failed to fetch organizations: #{e.message}"
+    end
+
+    def create_repository(name:, description:, private: false, topics: [], readme: nil, license: nil, owner: nil)
       repo_options = {
         description: description,
         private: private,
@@ -23,12 +41,17 @@ module Repose
         has_wiki: true,
         has_projects: true
       }
-      
+
       # Add license template if specified
       if license && !license.empty?
         repo_options[:license_template] = normalize_license_key(license)
       end
-      
+
+      # Create under an org when the owner differs from the authenticated user
+      unless owner.nil? || owner.empty? || owner == current_user_login
+        repo_options[:organization] = owner
+      end
+
       repo = @client.create_repository(name, repo_options)
 
       # Add topics if provided
@@ -56,9 +79,9 @@ module Repose
       raise Errors::GitHubError, "GitHub API error: #{e.message}"
     end
 
-    def repository_exists?(name)
-      username = @client.user.login
-      @client.repository?("#{username}/#{name}")
+    def repository_exists?(name, owner = nil)
+      namespace = owner || current_user_login
+      @client.repository?("#{namespace}/#{name}")
     rescue Octokit::NotFound
       false
     rescue Octokit::Unauthorized => e
@@ -89,6 +112,10 @@ module Repose
 
     private
 
+    def current_user_login
+      @current_user_login ||= @client.user.login
+    end
+
     def normalize_license_key(license)
       # GitHub API uses specific license keys
       license_map = {
@@ -103,7 +130,7 @@ module Repose
         "mpl-2.0" => "mpl-2.0",
         "unlicense" => "unlicense"
       }
-      
+
       normalized = license_map[license.downcase] || license.downcase
       normalized
     end

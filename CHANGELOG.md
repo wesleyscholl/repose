@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-03-11
+
+### Added
+- **Organization & Namespace Selection**: Choose where to create a new repository
+  - Fetches the authenticated user's personal account and all GitHub organization memberships via the API
+  - Presents an interactive `Create repository under:` selection prompt when multiple namespaces are available
+  - Automatically skips the prompt when the user has no org memberships (personal account only)
+  - New `--org ORG` CLI flag to specify the destination directly (bypasses the prompt for scripted use)
+  - Gracefully falls back to personal account if namespace fetching fails
+  - Preview output now shows `Destination: owner/repo-name` so the target is visible before confirming
+- **`GitHubClient#available_namespaces`**: New public method returning personal + org namespaces
+- **`GitHubClient#repository_exists?`**: Now accepts an optional `owner` parameter
+
+### Changed
+- `GitHubClient#create_repository` accepts a new `owner:` keyword argument; passes `organization:` to the GitHub API when creating under an org
+
 ## [1.3.0] - 2025-11-21
 
 ### Added

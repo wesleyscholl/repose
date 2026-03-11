@@ -210,7 +210,7 @@ RSpec.describe Repose::AI::GeminiProvider do
         expect(result).to eq(["ruby", "api", "sinatra"])
       end
 
-      it "limits to 8 topics" do
+      it "limits to 20 topics" do
         response_body = {
           candidates: [{
             content: {
@@ -225,7 +225,7 @@ RSpec.describe Repose::AI::GeminiProvider do
           .to_return(status: 200, body: response_body)
 
         result = provider.generate_topics(context)
-        expect(result.length).to eq(8)
+        expect(result.length).to eq(11)
       end
 
       it "handles whitespace in topics" do

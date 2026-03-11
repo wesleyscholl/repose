@@ -91,9 +91,11 @@ module Repose
         rescue Net::OpenTimeout, Net::ReadTimeout => e
           retries += 1
           raise Repose::APIError, "Gemini API timeout: #{e.message}" if retries > MAX_RETRIES
-          
+
           sleep(2**retries) # Exponential backoff
           retry
+        rescue Repose::Errors::Error
+          raise # Let AuthenticationError, RateLimitError, etc. propagate unchanged
         rescue StandardError => e
           raise Repose::APIError, "Gemini API error: #{e.message}"
         end

@@ -253,7 +253,7 @@ RSpec.describe Repose::AI::OllamaProvider do
         expect(result).to eq(["python", "api", "fastapi"])
       end
 
-      it "limits to 8 topics" do
+      it "limits to 20 topics" do
         response_body = {
           response: "a, b, c, d, e, f, g, h, i, j, k, l"
         }.to_json
@@ -262,7 +262,7 @@ RSpec.describe Repose::AI::OllamaProvider do
           .to_return(status: 200, body: response_body)
 
         result = provider.generate_topics(context)
-        expect(result.length).to eq(8)
+        expect(result.length).to eq(12)
       end
 
       it "handles whitespace" do

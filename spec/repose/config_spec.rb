@@ -35,6 +35,7 @@ RSpec.describe Repose::Config do
 
       before do
         File.write(config_file_path, YAML.dump(config_data))
+        config.load_config # Reload now that the test file exists and the path stub is active
       end
 
       it "loads configuration from file" do

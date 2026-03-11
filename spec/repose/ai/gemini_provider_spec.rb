@@ -189,7 +189,7 @@ RSpec.describe Repose::AI::GeminiProvider do
           .to_return(status: 200, body: response_body)
 
         result = provider.generate_topics(context)
-        expect(result).to eq(["ruby", "sinatra", "api", "rest", "data-processing"])
+        expect(result).to eq(%w[ruby sinatra api rest data-processing])
       end
 
       it "removes duplicates" do
@@ -207,7 +207,7 @@ RSpec.describe Repose::AI::GeminiProvider do
           .to_return(status: 200, body: response_body)
 
         result = provider.generate_topics(context)
-        expect(result).to eq(["ruby", "api", "sinatra"])
+        expect(result).to eq(%w[ruby api sinatra])
       end
 
       it "limits to 20 topics" do
@@ -243,7 +243,7 @@ RSpec.describe Repose::AI::GeminiProvider do
           .to_return(status: 200, body: response_body)
 
         result = provider.generate_topics(context)
-        expect(result).to eq(["ruby", "sinatra", "api"])
+        expect(result).to eq(%w[ruby sinatra api])
       end
 
       it "converts topics to lowercase" do
@@ -261,7 +261,7 @@ RSpec.describe Repose::AI::GeminiProvider do
           .to_return(status: 200, body: response_body)
 
         result = provider.generate_topics(context)
-        expect(result).to eq(["ruby", "sinatra", "api"])
+        expect(result).to eq(%w[ruby sinatra api])
       end
     end
 

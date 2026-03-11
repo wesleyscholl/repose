@@ -31,7 +31,8 @@ module Repose
     option :topics, type: :array, desc: "Custom topics/tags"
     option :license, type: :string, desc: "License type (mit, apache-2.0, gpl-3.0, bsd-3-clause, unlicense, etc.)"
     option :dry_run, type: :boolean, default: false, desc: "Preview without creating"
-    option :org, type: :string, desc: "Organization or user login to create the repository under (skips interactive selection)"
+    option :org, type: :string,
+                 desc: "Organization or user login to create the repository under (skips interactive selection)"
     def create(name = nil)
       pastel = Pastel.new
       prompt = TTY::Prompt.new
@@ -57,7 +58,7 @@ module Repose
       begin
         ai_content = AIGenerator.new.generate(context)
         spinner.success("✅")
-      rescue => e
+      rescue StandardError => e
         spinner.error("❌")
         puts pastel.red("Error generating AI content: #{e.message}")
         exit 1
@@ -67,12 +68,12 @@ module Repose
       display_preview(ai_content, pastel, owner)
 
       # Confirm creation
-      unless options[:dry_run]
-        if prompt.yes?("Create repository?")
-          create_repository(name, ai_content, options, pastel, owner)
-        else
-          puts pastel.yellow("Repository creation cancelled.")
-        end
+      return if options[:dry_run]
+
+      if prompt.yes?("Create repository?")
+        create_repository(name, ai_content, options, pastel, owner)
+      else
+        puts pastel.yellow("Repository creation cancelled.")
       end
     end
 
@@ -159,9 +160,7 @@ module Repose
         ]
         context[:license] = prompt.select("Choose a license:", licenses)
 
-        if context[:license] == "other"
-          context[:license] = prompt.ask("Enter license name:", default: "MIT")
-        end
+        context[:license] = prompt.ask("Enter license name:", default: "MIT") if context[:license] == "other"
       end
 
       # Additional context
@@ -172,19 +171,19 @@ module Repose
 
     def framework_suggestions(language)
       frameworks = {
-        "ruby" => ["Rails", "Sinatra", "Hanami", "Roda"],
+        "ruby" => %w[Rails Sinatra Hanami Roda],
         "javascript" => ["React", "Vue", "Express", "Next.js", "Nuxt"],
         "typescript" => ["React", "Vue", "Express", "Next.js", "Nuxt", "Angular"],
-        "python" => ["Django", "Flask", "FastAPI", "Streamlit"],
+        "python" => %w[Django Flask FastAPI Streamlit],
         "java" => ["Spring Boot", "Quarkus", "Micronaut"],
-        "go" => ["Gin", "Echo", "Fiber", "Chi"],
-        "rust" => ["Actix", "Axum", "Warp", "Rocket"],
-        "swift" => ["Vapor", "Perfect", "Kitura"],
-        "php" => ["Laravel", "Symfony", "CodeIgniter", "CakePHP"],
+        "go" => %w[Gin Echo Fiber Chi],
+        "rust" => %w[Actix Axum Warp Rocket],
+        "swift" => %w[Vapor Perfect Kitura],
+        "php" => %w[Laravel Symfony CodeIgniter CakePHP],
         "c#" => [".NET Core", "ASP.NET", "Blazor"],
-        "c++" => ["Qt", "Boost", "Poco"],
-        "c" => ["GTK", "libuv", "SDL2"],
-        "scala" => ["Play", "Akka", "Lagom"],
+        "c++" => %w[Qt Boost Poco],
+        "c" => %w[GTK libuv SDL2],
+        "scala" => %w[Play Akka Lagom],
         "kotlin" => ["Ktor", "Spring Boot", "Micronaut"]
       }
 
@@ -192,7 +191,7 @@ module Repose
     end
 
     def display_preview(content, pastel, owner = nil)
-      puts "\n" + pastel.cyan("📋 Generated Repository Content")
+      puts "\n#{pastel.cyan("📋 Generated Repository Content")}"
       puts pastel.dim("-" * 40)
 
       destination = owner ? "#{owner}/#{content[:name]}" : content[:name]
@@ -202,8 +201,8 @@ module Repose
       puts pastel.bold("License: ") + (content[:license] || "MIT").upcase
       puts pastel.bold("Topics: ") + content[:topics].join(", ")
 
-      puts "\n" + pastel.bold("README Preview:")
-      puts pastel.dim(content[:readme][0..300] + "...")
+      puts "\n#{pastel.bold("README Preview:")}"
+      puts pastel.dim("#{content[:readme][0..300]}...")
       puts
     end
 
@@ -250,7 +249,7 @@ module Repose
 
         puts pastel.green("Repository created successfully!")
         puts pastel.cyan("🔗 #{repo.html_url}")
-      rescue => e
+      rescue StandardError => e
         spinner.error("❌")
         puts pastel.red("Error creating repository: #{e.message}")
         exit 1

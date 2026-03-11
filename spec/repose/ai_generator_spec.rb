@@ -151,13 +151,13 @@ RSpec.describe Repose::AIGenerator do
     end
 
     context "with purpose" do
-      let(:context) { 
-        { 
-          name: "data-processor", 
-          language: "python", 
-          purpose: "processing CSV files" 
-        } 
-      }
+      let(:context) do
+        {
+          name: "data-processor",
+          language: "python",
+          purpose: "processing CSV files"
+        }
+      end
 
       it "includes purpose in description" do
         result = method.call(context)
@@ -166,14 +166,14 @@ RSpec.describe Repose::AIGenerator do
     end
 
     context "with framework and purpose" do
-      let(:context) { 
-        { 
-          name: "blog-api", 
-          language: "ruby", 
+      let(:context) do
+        {
+          name: "blog-api",
+          language: "ruby",
           framework: "rails",
-          purpose: "managing blog posts" 
-        } 
-      }
+          purpose: "managing blog posts"
+        }
+      end
 
       it "includes both framework and purpose" do
         result = method.call(context)
@@ -182,13 +182,13 @@ RSpec.describe Repose::AIGenerator do
     end
 
     context "with empty purpose" do
-      let(:context) { 
-        { 
-          name: "app", 
-          language: "javascript", 
-          purpose: "" 
-        } 
-      }
+      let(:context) do
+        {
+          name: "app",
+          language: "javascript",
+          purpose: ""
+        }
+      end
 
       it "ignores empty purpose" do
         result = method.call(context)
@@ -329,13 +329,13 @@ RSpec.describe Repose::AIGenerator do
     end
 
     context "with purpose" do
-      let(:context) { 
-        { 
-          name: "data-tool", 
-          language: "go", 
-          purpose: "data analysis" 
-        } 
-      }
+      let(:context) do
+        {
+          name: "data-tool",
+          language: "go",
+          purpose: "data analysis"
+        }
+      end
       let(:result) { method.call(context) }
 
       it "includes purpose in description" do

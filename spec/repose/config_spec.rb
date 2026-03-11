@@ -10,7 +10,7 @@ RSpec.describe Repose::Config do
   end
 
   after do
-    File.delete(config_file_path) if File.exist?(config_file_path)
+    FileUtils.rm_f(config_file_path)
   end
 
   describe "#initialize" do
@@ -28,7 +28,7 @@ RSpec.describe Repose::Config do
         {
           "github_token" => "gh_token_123",
           "openai_api_key" => "sk-openai-key",
-          "default_topics" => ["ruby", "cli"],
+          "default_topics" => %w[ruby cli],
           "default_language" => "ruby"
         }
       end
@@ -41,7 +41,7 @@ RSpec.describe Repose::Config do
       it "loads configuration from file" do
         expect(config.github_token).to eq("gh_token_123")
         expect(config.openai_api_key).to eq("sk-openai-key")
-        expect(config.default_topics).to eq(["ruby", "cli"])
+        expect(config.default_topics).to eq(%w[ruby cli])
         expect(config.default_language).to eq("ruby")
       end
     end
@@ -61,7 +61,7 @@ RSpec.describe Repose::Config do
 
   describe "#config_file_path" do
     let(:real_config) { described_class.new }
-    
+
     it "returns the home directory config file path" do
       expect(real_config.config_file_path).to eq(File.expand_path("~/.repose.yml"))
     end
@@ -91,17 +91,17 @@ RSpec.describe Repose::Config do
     it "creates config file with current settings" do
       config.github_token = "gh_token_456"
       config.openai_api_key = "sk-new-key"
-      config.default_topics = ["python", "api"]
+      config.default_topics = %w[python api]
       config.default_language = "python"
 
       config.save!
 
       expect(File.exist?(config_file_path)).to be true
-      
+
       loaded_config = YAML.load_file(config_file_path)
       expect(loaded_config["github_token"]).to eq("gh_token_456")
       expect(loaded_config["openai_api_key"]).to eq("sk-new-key")
-      expect(loaded_config["default_topics"]).to eq(["python", "api"])
+      expect(loaded_config["default_topics"]).to eq(%w[python api])
       expect(loaded_config["default_language"]).to eq("python")
     end
 
@@ -204,8 +204,8 @@ RSpec.describe Repose::Config do
     end
 
     it "allows setting and getting default_topics" do
-      config.default_topics = ["go", "microservice"]
-      expect(config.default_topics).to eq(["go", "microservice"])
+      config.default_topics = %w[go microservice]
+      expect(config.default_topics).to eq(%w[go microservice])
     end
 
     it "allows setting and getting default_language" do

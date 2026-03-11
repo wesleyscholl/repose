@@ -21,7 +21,7 @@ RSpec.describe Repose::GitHubClient do
     context "when no token is configured" do
       let(:config) { instance_double(Repose::Config, github_token: nil) }
 
-      before { allow(ENV).to receive(:[]).with("REPOSE_TOKEN").and_return(nil) }
+      before { allow(ENV).to receive(:fetch).with("REPOSE_TOKEN", nil).and_return(nil) }
 
       it "raises a ConfigurationError" do
         expect { described_class.new }.to raise_error(Repose::Errors::ConfigurationError)
@@ -77,7 +77,9 @@ RSpec.describe Repose::GitHubClient do
       end
 
       it "raises a GitHubError" do
-        expect { client.available_namespaces }.to raise_error(Repose::Errors::GitHubError, /Failed to fetch organizations/)
+        expect do
+          client.available_namespaces
+        end.to raise_error(Repose::Errors::GitHubError, /Failed to fetch organizations/)
       end
     end
   end
@@ -96,15 +98,14 @@ RSpec.describe Repose::GitHubClient do
         name: "test-repo",
         description: "A test repository",
         private: false,
-        topics: ["ruby", "cli"],
+        topics: %w[ruby cli],
         readme: "# Test Repo\n\nThis is a test."
       }
     end
 
     context "when repository creation succeeds" do
       before do
-        allow(octokit_client).to receive(:user).and_return(user_data)
-        allow(octokit_client).to receive(:create_repository).and_return(repo_data)
+        allow(octokit_client).to receive_messages(user: user_data, create_repository: repo_data)
         allow(octokit_client).to receive(:replace_all_topics)
         allow(octokit_client).to receive(:create_contents)
       end
@@ -138,7 +139,7 @@ RSpec.describe Repose::GitHubClient do
         client.create_repository(**create_params)
 
         expect(octokit_client).to have_received(:replace_all_topics).with(
-          "testuser/test-repo", ["ruby", "cli"]
+          "testuser/test-repo", %w[ruby cli]
         )
       end
 
@@ -161,21 +162,21 @@ RSpec.describe Repose::GitHubClient do
 
       context "when no topics are provided" do
         it "does not call replace_all_topics" do
-          client.create_repository(**create_params.merge(topics: []))
+          client.create_repository(**create_params, topics: [])
           expect(octokit_client).not_to have_received(:replace_all_topics)
         end
       end
 
       context "when no README is provided" do
         it "does not create README file" do
-          client.create_repository(**create_params.merge(readme: nil))
+          client.create_repository(**create_params, readme: nil)
           expect(octokit_client).not_to have_received(:create_contents)
         end
       end
 
       context "when creating a private repository" do
         it "sets private flag to true" do
-          client.create_repository(**create_params.merge(private: true))
+          client.create_repository(**create_params, private: true)
 
           expect(octokit_client).to have_received(:create_repository).with(
             "test-repo", hash_including(private: true)
@@ -197,7 +198,7 @@ RSpec.describe Repose::GitHubClient do
         end
 
         it "passes organization key to Octokit" do
-          client.create_repository(**create_params.merge(owner: "my-org"))
+          client.create_repository(**create_params, owner: "my-org")
 
           expect(octokit_client).to have_received(:create_repository).with(
             "test-repo", hash_including(organization: "my-org")
@@ -205,14 +206,14 @@ RSpec.describe Repose::GitHubClient do
         end
 
         it "returns the org repository" do
-          result = client.create_repository(**create_params.merge(owner: "my-org"))
+          result = client.create_repository(**create_params, owner: "my-org")
           expect(result.full_name).to eq("my-org/test-repo")
         end
       end
 
       context "when owner matches the authenticated user login" do
         it "does not pass organization key" do
-          client.create_repository(**create_params.merge(owner: "testuser"))
+          client.create_repository(**create_params, owner: "testuser")
 
           expect(octokit_client).to have_received(:create_repository).with(
             "test-repo", hash_excluding(:organization)
@@ -222,7 +223,7 @@ RSpec.describe Repose::GitHubClient do
 
       context "when a license is specified" do
         it "includes the normalized license template" do
-          client.create_repository(**create_params.merge(license: "mit"))
+          client.create_repository(**create_params, license: "mit")
 
           expect(octokit_client).to have_received(:create_repository).with(
             "test-repo", hash_including(license_template: "mit")
@@ -239,9 +240,9 @@ RSpec.describe Repose::GitHubClient do
       end
 
       it "raises a GitHubError with 'already exist' message" do
-        expect {
+        expect do
           client.create_repository(**create_params)
-        }.to raise_error(Repose::Errors::GitHubError, /Repository creation failed/)
+        end.to raise_error(Repose::Errors::GitHubError, /Repository creation failed/)
       end
     end
 
@@ -253,9 +254,9 @@ RSpec.describe Repose::GitHubClient do
       end
 
       it "raises an AuthenticationError" do
-        expect {
+        expect do
           client.create_repository(**create_params)
-        }.to raise_error(Repose::Errors::AuthenticationError)
+        end.to raise_error(Repose::Errors::AuthenticationError)
       end
     end
   end
@@ -288,7 +289,7 @@ RSpec.describe Repose::GitHubClient do
     context "when repository is not found (raises NotFound)" do
       before do
         allow(octokit_client).to receive(:repository?).with("testuser/not-found-repo")
-          .and_raise(Octokit::NotFound.new)
+                                                      .and_raise(Octokit::NotFound.new)
       end
 
       it "returns false" do
@@ -326,9 +327,9 @@ RSpec.describe Repose::GitHubClient do
       end
 
       it "raises an AuthenticationError" do
-        expect {
+        expect do
           client.user_info
-        }.to raise_error(Repose::Errors::AuthenticationError, /Failed to authenticate/)
+        end.to raise_error(Repose::Errors::AuthenticationError, /Failed to authenticate/)
       end
     end
 
@@ -338,9 +339,9 @@ RSpec.describe Repose::GitHubClient do
       end
 
       it "raises a GitHubError" do
-        expect {
+        expect do
           client.user_info
-        }.to raise_error(Repose::Errors::GitHubError, /Failed to fetch user info/)
+        end.to raise_error(Repose::Errors::GitHubError, /Failed to fetch user info/)
       end
     end
   end

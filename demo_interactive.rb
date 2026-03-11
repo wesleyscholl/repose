@@ -1,14 +1,15 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 # Interactive demo for Repose - AI-powered repository creation
 
-require 'colorize'
+require "colorize"
 
 def print_banner
-  puts "\n" + "=" * 60
+  puts "\n#{"=" * 60}"
   puts "  🎯 Repose - AI-Powered Repository Creator".bold
   puts "  Intelligent GitHub Project Setup & Documentation"
-  puts "=" * 60 + "\n"
+  puts "#{"=" * 60}\n"
 end
 
 def show_features
@@ -26,7 +27,7 @@ end
 def simulate_repo_creation
   puts "🚀 Simulating Repository Creation...".bold.cyan
   puts ""
-  
+
   sleep 0.5
   puts "   📝 Analyzing project name: 'awesome-ml-project'"
   sleep 0.3
@@ -36,31 +37,31 @@ def simulate_repo_creation
   sleep 0.3
   puts "   ✍️  Creating comprehensive README..."
   sleep 0.5
-  
+
   readme_preview = <<~README
     # Awesome ML Project
-    
+
     Machine learning project for advanced data analysis and prediction.
-    
+
     ## Features
     - Data preprocessing pipeline
     - Model training and evaluation
     - Production-ready inference
-    
+
     ## Quick Start
     ```bash
     pip install -r requirements.txt
     python train.py
     ```
   README
-  
+
   puts "\n   📄 README Preview:".bold
-  puts "   " + "-" * 55
-  readme_preview.lines.first(8).each { |line| puts "   " + line.chomp }
+  puts "   #{"-" * 55}"
+  readme_preview.lines.first(8).each { |line| puts "   #{line.chomp}" }
   puts "   ..."
-  puts "   " + "-" * 55
+  puts "   #{"-" * 55}"
   puts ""
-  
+
   sleep 0.5
   puts "   ✅ Repository created successfully!".green.bold
   puts ""
@@ -100,7 +101,7 @@ def main
   simulate_repo_creation
   show_stats
   show_usage_examples
-  
+
   puts "=" * 60
   puts "  Repository: github.com/wesleyscholl/repose"
   puts "  Status: Production | Coverage: 98.39% | Ruby Gem"

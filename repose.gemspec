@@ -30,14 +30,14 @@ Gem::Specification.new do |spec|
   spec.executables = ["reposer"]
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "thor", "~> 1.0"
-  spec.add_dependency "octokit", "~> 6.0"
   spec.add_dependency "faraday", "~> 2.0"
+  spec.add_dependency "octokit", "~> 6.0"
+  spec.add_dependency "ostruct", "~> 0.6"
   spec.add_dependency "pastel", "~> 0.8"
+  spec.add_dependency "thor", "~> 1.0"
   spec.add_dependency "tty-prompt", "~> 0.23"
   spec.add_dependency "tty-spinner", "~> 0.9"
   spec.add_dependency "yaml", "~> 0.3"
-  spec.add_dependency "ostruct", "~> 0.6"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html

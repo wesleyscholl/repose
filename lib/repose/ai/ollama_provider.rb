@@ -47,7 +47,7 @@ module Repose
         uri = URI("#{endpoint}/api/tags")
         request = Net::HTTP::Get.new(uri)
 
-        response = Net::HTTP.start(uri.hostname, uri.port, 
+        response = Net::HTTP.start(uri.hostname, uri.port,
                                    open_timeout: 5, read_timeout: 5) do |http|
           http.request(request)
         end
@@ -66,7 +66,7 @@ module Repose
         request["Content-Type"] = "application/json"
         request.body = { name: model_name }.to_json
 
-        response = Net::HTTP.start(uri.hostname, uri.port, 
+        response = Net::HTTP.start(uri.hostname, uri.port,
                                    open_timeout: 300, read_timeout: 300) do |http|
           http.request(request)
         end
@@ -80,7 +80,7 @@ module Repose
 
       def call_api(prompt, max_tokens: 500, temperature: 0.7)
         uri = URI("#{endpoint}/api/generate")
-        
+
         payload = {
           model: model,
           prompt: prompt,
@@ -99,7 +99,7 @@ module Repose
           request["Content-Type"] = "application/json"
           request.body = payload.to_json
 
-          response = Net::HTTP.start(uri.hostname, uri.port, 
+          response = Net::HTTP.start(uri.hostname, uri.port,
                                      open_timeout: TIMEOUT, read_timeout: TIMEOUT) do |http|
             http.request(request)
           end
@@ -108,7 +108,7 @@ module Repose
         rescue Net::OpenTimeout, Net::ReadTimeout => e
           retries += 1
           raise Repose::APIError, "Ollama timeout: #{e.message}" if retries > MAX_RETRIES
-          
+
           sleep(3 * retries) # Linear backoff
           retry
         rescue Errno::ECONNREFUSED
@@ -133,15 +133,15 @@ module Repose
       def build_description_prompt(context)
         <<~PROMPT
           Generate a concise GitHub repository description (max 120 characters) for:
-          
+
           Repository: #{context[:name]}
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
-          
+
           IMPORTANT: Include at least 2 relevant emojis that represent the project.
           Example: "🚀 Fast API server for data processing 📊"
-          
+
           Return ONLY the description text with emojis, no quotes or formatting.
         PROMPT
       end
@@ -149,12 +149,12 @@ module Repose
       def build_topics_prompt(context)
         <<~PROMPT
           Generate 20 GitHub topics for:
-          
+
           Repository: #{context[:name]}
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
-          
+
           Include topics for: language, framework, use-case, architecture, deployment, testing.
           Return ONLY comma-separated lowercase keywords (e.g., python, api, docker, cli, testing, ci-cd).
         PROMPT
@@ -163,16 +163,16 @@ module Repose
       def build_readme_prompt(context)
         title = context[:name].split(/[-_]/).map(&:capitalize).join(" ")
         license = context[:license] || "MIT"
-        
+
         <<~PROMPT
           Create a GitHub README.md for:
-          
+
           Repository: #{context[:name]} (Display as: #{title})
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
           License: #{license}
-          
+
           Include sections with emojis:
           - Title with emoji (# 🚀 #{title})
           - Brief description with emojis
@@ -181,14 +181,14 @@ module Repose
           - 💻 Usage with code examples
           - 🤝 Contributing
           - 📄 License (#{license})
-          
+
           Use proper Markdown with emojis. Return ONLY the README content.
         PROMPT
       end
 
       def clean_response(text)
         return "" if text.nil? || text.empty?
-        
+
         # Remove common artifacts
         text.gsub(/^Here's.*?:\s*/i, "")
             .gsub(/^```\w*\n/, "")
@@ -198,10 +198,10 @@ module Repose
 
       def parse_topics(text)
         return [] if text.nil? || text.empty?
-        
+
         # Extract comma-separated values
-        topics = text.split(",").map(&:strip).map(&:downcase)
-        
+        topics = text.split(",").map { |t| t.strip.downcase }
+
         # Remove duplicates, filter out empty, limit to 20
         topics.reject(&:empty?).uniq.first(20)
       end

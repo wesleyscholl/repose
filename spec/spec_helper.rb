@@ -6,17 +6,17 @@ require "simplecov-lcov"
 SimpleCov.start do
   add_filter "/spec/"
   add_filter "/vendor/"
-  
+
   SimpleCov::Formatter::LcovFormatter.config do |c|
     c.report_with_single_file = true
     c.single_report_path = "coverage/lcov.info"
   end
-  
+
   formatter SimpleCov::Formatter::MultiFormatter.new([
-    SimpleCov::Formatter::HTMLFormatter,
-    SimpleCov::Formatter::LcovFormatter
-  ])
-  
+                                                       SimpleCov::Formatter::HTMLFormatter,
+                                                       SimpleCov::Formatter::LcovFormatter
+                                                     ])
+
   minimum_coverage 80
 end
 
@@ -38,15 +38,15 @@ RSpec.configure do |config|
   end
 
   # Configure WebMock
-  config.before(:each) do
+  config.before do
     WebMock.reset!
     WebMock.disable_net_connect!(allow_localhost: true)
   end
-  
+
   # Clean up config file after tests
-  config.after(:each) do
+  config.after do
     config_file = File.expand_path("~/.repose_test.yml")
-    File.delete(config_file) if File.exist?(config_file)
+    FileUtils.rm_f(config_file)
   end
 end
 
@@ -55,8 +55,8 @@ VCR.configure do |config|
   config.cassette_library_dir = "spec/vcr_cassettes"
   config.hook_into :webmock
   config.configure_rspec_metadata!
-  
+
   # Filter sensitive data
-  config.filter_sensitive_data('<GITHUB_TOKEN>') { ENV['GITHUB_TOKEN'] }
-  config.filter_sensitive_data('<OPENAI_API_KEY>') { ENV['OPENAI_API_KEY'] }
+  config.filter_sensitive_data("<GITHUB_TOKEN>") { ENV.fetch("GITHUB_TOKEN", nil) }
+  config.filter_sensitive_data("<OPENAI_API_KEY>") { ENV.fetch("OPENAI_API_KEY", nil) }
 end

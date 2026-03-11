@@ -32,9 +32,9 @@ RSpec.describe Repose::Errors do
       end
 
       it "can be raised and rescued" do
-        expect {
+        expect do
           raise error
-        }.to raise_error(described_class::Error, "Base error message")
+        end.to raise_error(described_class::Error, "Base error message")
       end
     end
 
@@ -46,15 +46,15 @@ RSpec.describe Repose::Errors do
       end
 
       it "can be raised and rescued as ConfigError" do
-        expect {
+        expect do
           raise error
-        }.to raise_error(described_class::ConfigError, "Configuration is invalid")
+        end.to raise_error(described_class::ConfigError, "Configuration is invalid")
       end
 
       it "can be rescued as base Error" do
-        expect {
+        expect do
           raise error
-        }.to raise_error(described_class::Error)
+        end.to raise_error(described_class::Error)
       end
     end
 
@@ -66,15 +66,15 @@ RSpec.describe Repose::Errors do
       end
 
       it "can be raised and rescued as GitHubError" do
-        expect {
+        expect do
           raise error
-        }.to raise_error(described_class::GitHubError, "GitHub API failed")
+        end.to raise_error(described_class::GitHubError, "GitHub API failed")
       end
 
       it "can be rescued as base Error" do
-        expect {
+        expect do
           raise error
-        }.to raise_error(described_class::Error)
+        end.to raise_error(described_class::Error)
       end
     end
 
@@ -86,15 +86,15 @@ RSpec.describe Repose::Errors do
       end
 
       it "can be raised and rescued as AIError" do
-        expect {
+        expect do
           raise error
-        }.to raise_error(described_class::AIError, "AI service unavailable")
+        end.to raise_error(described_class::AIError, "AI service unavailable")
       end
 
       it "can be rescued as base Error" do
-        expect {
+        expect do
           raise error
-        }.to raise_error(described_class::Error)
+        end.to raise_error(described_class::Error)
       end
     end
 
@@ -106,15 +106,15 @@ RSpec.describe Repose::Errors do
       end
 
       it "can be raised and rescued as ValidationError" do
-        expect {
+        expect do
           raise error
-        }.to raise_error(described_class::ValidationError, "Invalid input")
+        end.to raise_error(described_class::ValidationError, "Invalid input")
       end
 
       it "can be rescued as base Error" do
-        expect {
+        expect do
           raise error
-        }.to raise_error(described_class::Error)
+        end.to raise_error(described_class::Error)
       end
     end
   end
@@ -124,7 +124,7 @@ RSpec.describe Repose::Errors do
       caught_error = nil
 
       begin
-        raise described_class::ConfigError.new("Test config error")
+        raise described_class::ConfigError, "Test config error"
       rescue described_class::ConfigError => e
         caught_error = e
       end
@@ -142,11 +142,9 @@ RSpec.describe Repose::Errors do
         described_class::AIError.new("AI"),
         described_class::ValidationError.new("Validation")
       ].each do |error|
-        begin
-          raise error
-        rescue described_class::Error => e
-          errors_caught << e.class
-        end
+        raise error
+      rescue described_class::Error => e
+        errors_caught << e.class
       end
 
       expect(errors_caught).to contain_exactly(

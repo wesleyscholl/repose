@@ -6,14 +6,14 @@ module Repose
   class Config
     attr_accessor :github_token, :openai_api_key, :default_topics, :default_language
 
-  def initialize
-    @default_topics = []
-    load_config
-  end
+    def initialize
+      @default_topics = []
+      load_config
+    end
 
-  def config_file_path
-    File.expand_path("~/.repose.yml")
-  end
+    def config_file_path
+      File.expand_path("~/.repose.yml")
+    end
 
     def load_config
       return unless File.exist?(config_file_path)
@@ -23,7 +23,7 @@ module Repose
       @openai_api_key = config["openai_api_key"]
       @default_topics = config["default_topics"] || []
       @default_language = config["default_language"]
-    rescue => e
+    rescue StandardError => e
       warn "Warning: Could not load config file: #{e.message}"
     end
 
@@ -36,7 +36,7 @@ module Repose
       }.compact
 
       File.write(config_file_path, YAML.dump(config_hash))
-      File.chmod(0600, config_file_path) # Secure the config file
+      File.chmod(0o600, config_file_path) # Secure the config file
     end
 
     def valid?

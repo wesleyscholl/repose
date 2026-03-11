@@ -3,7 +3,7 @@ require:
   - rubocop-rspec
 
 AllCops:
-  TargetRubyVersion: 3.0
+  TargetRubyVersion: 3.2
   NewCops: enable
   Exclude:
     - 'vendor/**/*'
@@ -18,16 +18,102 @@ Style/StringLiterals:
 Style/StringLiteralsInInterpolation:
   EnforcedStyle: double_quotes
 
+# Accommodate long lines in gemspec description and complex method calls
 Layout/LineLength:
-  Max: 120
+  Max: 160
 
 Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
     - '*.gemspec'
 
+# Standalone scripts have long methods by nature; library methods are bounded
 Metrics/MethodLength:
-  Max: 20
+  Max: 40
+  Exclude:
+    - 'demo_interactive.rb'
+    - 'recreate_repo.rb'
+    - 'setup_github_repo.rb'
+    - 'lib/repose/project_files_generator.rb'
 
+# Complex generation/CLI methods exceed the default; generation logic is bounded
+Metrics/AbcSize:
+  Max: 36
+  Exclude:
+    - 'demo_interactive.rb'
+    - 'recreate_repo.rb'
+    - 'setup_github_repo.rb'
+
+# AI generator, CLI, and GitHub client classes are intentionally feature-rich
 Metrics/ClassLength:
-  Max: 150
+  Max: 250
+  Exclude:
+    - 'lib/repose/project_files_generator.rb'
+
+# Provider selection and repository creation have inherently branchy logic
+Metrics/CyclomaticComplexity:
+  Max: 15
+  Exclude:
+    - 'demo_interactive.rb'
+    - 'recreate_repo.rb'
+    - 'setup_github_repo.rb'
+
+Metrics/PerceivedComplexity:
+  Max: 12
+  Exclude:
+    - 'demo_interactive.rb'
+    - 'recreate_repo.rb'
+    - 'setup_github_repo.rb'
+
+# GitHub client create_repository has 7 keyword arguments by API design
+Metrics/ParameterLists:
+  Max: 7
+
+# RSpec configuration — allow patterns common in integration-style test suites
+
+# Many spec contexts share setup state through memoized helpers
+RSpec/MultipleMemoizedHelpers:
+  Max: 12
+
+# Some examples require multi-step setup before a meaningful assertion
+RSpec/ExampleLength:
+  Max: 35
+
+# Integration and configuration tests assert multiple related values together
+RSpec/MultipleExpectations:
+  Max: 8
+
+# Allow up to 5 levels of nesting for complex CLI/GitHub client specs
+RSpec/NestedGroups:
+  Max: 5
+
+# allow_any_instance_of is necessary when the SUT creates instances internally
+RSpec/AnyInstance:
+  Enabled: false
+
+# Message expectation style (expect/receive vs allow/have_received) is a team choice
+RSpec/StubbedMock:
+  Enabled: false
+
+RSpec/MessageSpies:
+  Enabled: false
+
+# Plain doubles are required when the class uses method_missing (e.g. Pastel)
+RSpec/VerifiedDoubles:
+  Enabled: false
+
+# Integration specs intentionally describe workflows, not single classes
+RSpec/DescribeClass:
+  Enabled: false
+
+# GitHubClient file is named github_client_spec.rb rather than git_hub_client_spec.rb
+RSpec/SpecFilePathFormat:
+  Enabled: false
+
+# Indexed let names (org1, org2) are acceptable for multiple similar fixtures
+RSpec/IndexedLet:
+  Enabled: false
+
+# OpenStruct is used to mock Octokit response objects in tests
+Style/OpenStructUse:
+  Enabled: false

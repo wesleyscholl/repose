@@ -30,7 +30,7 @@ module Repose
     private
 
     def select_provider(provider_name)
-      return nil if provider_name == :none || provider_name == false
+      return nil if [:none, false].include?(provider_name)
 
       case provider_name&.to_sym
       when :gemini
@@ -53,7 +53,7 @@ module Repose
 
     def gemini_available?
       return false unless ENV["GEMINI_API_KEY"]
-      
+
       AI::GeminiProvider.new.available?
     rescue StandardError
       false
@@ -99,32 +99,33 @@ module Repose
       # Fallback description generation without AI - with emojis
       emoji = select_emoji_for_language(context[:language])
       purpose_emoji = select_emoji_for_purpose(context[:purpose])
-      
+
       base_desc = "#{emoji} A #{context[:language]}"
       base_desc += " #{context[:framework]}" if context[:framework]
       base_desc += " project"
       base_desc += " for #{context[:purpose]}" if context[:purpose] && !context[:purpose].empty?
       base_desc += " #{purpose_emoji}" if purpose_emoji
-      
+
       base_desc.capitalize
     end
 
+    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def generate_fallback_topics(context)
       # Enhanced topic generation without AI - generate up to 20 relevant topics
       topics = []
       topics << context[:language].downcase if context[:language]
       topics << context[:framework].downcase if context[:framework]
-      
+
       # Language ecosystem topics
       language_topics = language_ecosystem_topics(context[:language])
       topics.concat(language_topics)
-      
+
       # Framework-specific topics
       if context[:framework]
         framework_topics = framework_related_topics(context[:framework])
         topics.concat(framework_topics)
       end
-      
+
       # Add topics based on name patterns
       name_lower = context[:name].downcase
       topics << "api" if name_lower.include?("api")
@@ -139,7 +140,7 @@ module Repose
       topics << "devops" if name_lower.include?("devops") || name_lower.include?("deploy")
       topics << "docker" if name_lower.include?("docker") || name_lower.include?("container")
       topics << "kubernetes" if name_lower.include?("k8s") || name_lower.include?("kube")
-      
+
       # Purpose-based topics
       if context[:purpose]
         purpose_lower = context[:purpose].downcase
@@ -149,27 +150,30 @@ module Repose
         topics << "monitoring" if purpose_lower.match?(/(monitor|observ|metric)/)
         topics << "security" if purpose_lower.match?(/(secur|auth|encrypt)/)
       end
-      
+
       # General best practice topics
-      topics.concat(["opensource", "development", "best-practices"])
-      
+      topics.push("opensource", "development", "best-practices")
+
       topics.uniq.first(20)
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
     def generate_fallback_readme(context)
       title = context[:name].split(/[-_]/).map(&:capitalize).join(" ")
       emoji = select_emoji_for_language(context[:language])
       license = context[:license] || "MIT"
-      
+      framework_str = context[:framework] ? "#{context[:framework]} " : ""
+      purpose_str = context[:purpose] && !context[:purpose].empty? ? " for #{context[:purpose]}" : ""
+
       <<~README
         # #{emoji} #{title}
 
-        🚀 A #{context[:language]} #{context[:framework] ? "#{context[:framework]} " : ""}project#{context[:purpose] && !context[:purpose].empty? ? " for #{context[:purpose]}" : ""}.
+        🚀 A #{context[:language]} #{framework_str}project#{purpose_str}.
 
         ## ✨ Features
 
         - 🛠️ Modern #{context[:language]} development
-        #{context[:framework] ? "- 🏛️ Built with #{context[:framework]}" : ""}
+        #{"- 🏛️ Built with #{context[:framework]}" if context[:framework]}
         - 📚 Comprehensive documentation
         - ✅ Production-ready code
 
@@ -239,29 +243,30 @@ module Repose
 
     def select_emoji_for_purpose(purpose)
       return nil unless purpose && !purpose.empty?
-      
+
       purpose_lower = purpose.downcase
-      if purpose_lower.match?(/(api|rest|graphql)/)
+      case purpose_lower
+      when /(api|rest|graphql)/
         "🌐"
-      elsif purpose_lower.match?(/(data|analytics|etl)/)
+      when /(data|analytics|etl)/
         "📊"
-      elsif purpose_lower.match?(/(ai|ml|machine|learning)/)
+      when /(ai|ml|machine|learning)/
         "🤖"
-      elsif purpose_lower.match?(/(web|website|frontend)/)
+      when /(web|website|frontend)/
         "🎨"
-      elsif purpose_lower.match?(/(cli|command|terminal)/)
+      when /(cli|command|terminal)/
         "💻"
-      elsif purpose_lower.match?(/(test|testing|qa)/)
+      when /(test|testing|qa)/
         "✅"
-      elsif purpose_lower.match?(/(deploy|devops|automation)/)
+      when /(deploy|devops|automation)/
         "⚙️"
-      elsif purpose_lower.match?(/(monitor|observ|metric)/)
+      when /(monitor|observ|metric)/
         "📈"
-      elsif purpose_lower.match?(/(secur|auth|encrypt)/)
+      when /(secur|auth|encrypt)/
         "🔐"
-      elsif purpose_lower.match?(/(game|gaming)/)
+      when /(game|gaming)/
         "🎮"
-      elsif purpose_lower.match?(/(chat|message|communication)/)
+      when /(chat|message|communication)/
         "💬"
       else
         "✨"
@@ -270,18 +275,18 @@ module Repose
 
     def language_ecosystem_topics(language)
       topics_map = {
-        "ruby" => ["gem", "bundler", "rails", "ruby-on-rails"],
-        "python" => ["pip", "pypi", "django", "flask"],
-        "javascript" => ["npm", "nodejs", "webpack", "babel"],
-        "typescript" => ["npm", "nodejs", "webpack", "types"],
-        "go" => ["golang", "modules", "concurrent"],
-        "rust" => ["cargo", "crates", "systems-programming"],
-        "java" => ["maven", "gradle", "jvm", "spring"],
-        "kotlin" => ["gradle", "jvm", "android"],
-        "swift" => ["cocoapods", "spm", "ios"],
-        "php" => ["composer", "laravel", "symfony"],
-        "c#" => ["dotnet", "nuget", "asp-net"],
-        "scala" => ["sbt", "jvm", "functional"]
+        "ruby" => %w[gem bundler rails ruby-on-rails],
+        "python" => %w[pip pypi django flask],
+        "javascript" => %w[npm nodejs webpack babel],
+        "typescript" => %w[npm nodejs webpack types],
+        "go" => %w[golang modules concurrent],
+        "rust" => %w[cargo crates systems-programming],
+        "java" => %w[maven gradle jvm spring],
+        "kotlin" => %w[gradle jvm android],
+        "swift" => %w[cocoapods spm ios],
+        "php" => %w[composer laravel symfony],
+        "c#" => %w[dotnet nuget asp-net],
+        "scala" => %w[sbt jvm functional]
       }
       topics_map[language&.downcase] || []
     end
@@ -289,17 +294,17 @@ module Repose
     def framework_related_topics(framework)
       framework_lower = framework&.downcase
       topics = []
-      
+
       # Web frameworks
-      topics.concat(["web", "mvc", "backend"]) if framework_lower&.match?(/(rails|django|flask|express|spring)/)
-      topics.concat(["web", "frontend", "spa"]) if framework_lower&.match?(/(react|vue|angular)/)
-      
+      topics.push("web", "mvc", "backend") if framework_lower&.match?(/(rails|django|flask|express|spring)/)
+      topics.push("web", "frontend", "spa") if framework_lower&.match?(/(react|vue|angular)/)
+
       # API frameworks
-      topics.concat(["api", "rest", "microservices"]) if framework_lower&.match?(/(fastapi|gin|echo|actix)/)
-      
+      topics.push("api", "rest", "microservices") if framework_lower&.match?(/(fastapi|gin|echo|actix)/)
+
       # Full-stack frameworks
-      topics.concat(["fullstack", "ssr"]) if framework_lower&.match?(/(next|nuxt)/)
-      
+      topics.push("fullstack", "ssr") if framework_lower&.match?(/(next|nuxt)/)
+
       topics
     end
   end

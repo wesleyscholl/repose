@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 # Demo script showing repose functionality
-require_relative 'lib/repose'
+require_relative "lib/repose"
 
 puts "🎯 Repose Demo - AI Repository Creator"
 puts "=" * 50
@@ -17,7 +17,7 @@ context = {
 
 puts "📝 Sample Project Context:"
 puts "  Name: #{context[:name]}"
-puts "  Language: #{context[:language]}" 
+puts "  Language: #{context[:language]}"
 puts "  Framework: #{context[:framework]}"
 puts "  Purpose: #{context[:purpose]}"
 
@@ -29,11 +29,11 @@ content = ai_generator.generate(context)
 puts "\n📋 Generated Repository Content:"
 puts "-" * 40
 puts "📛 Description: #{content[:description]}"
-puts "🏷️  Topics: #{content[:topics].join(', ')}"
+puts "🏷️  Topics: #{content[:topics].join(", ")}"
 
 puts "\n📄 Generated README Preview:"
 puts "-" * 40
-puts content[:readme][0..500] + "..."
+puts "#{content[:readme][0..500]}..."
 
 puts "\n✅ Demo complete! This shows how Repose generates intelligent"
 puts "   repository content from minimal input. Once configured with"

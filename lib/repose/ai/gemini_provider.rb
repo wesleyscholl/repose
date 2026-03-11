@@ -15,9 +15,9 @@ module Repose
       attr_reader :api_key, :model
 
       def initialize(api_key: nil, model: DEFAULT_MODEL)
-        @api_key = api_key || ENV["GEMINI_API_KEY"]
+        @api_key = api_key || ENV.fetch("GEMINI_API_KEY", nil)
         @model = model
-        
+
         raise Repose::ConfigurationError, "Gemini API key not configured" if @api_key.nil? || @api_key.empty?
       end
 
@@ -41,15 +41,15 @@ module Repose
 
       def available?
         return false if @api_key.nil? || @api_key.empty?
-        
+
         # Quick health check
         uri = URI("#{API_ENDPOINT}/#{model}?key=#{api_key}")
         request = Net::HTTP::Get.new(uri)
-        
+
         response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true, open_timeout: 5, read_timeout: 5) do |http|
           http.request(request)
         end
-        
+
         response.is_a?(Net::HTTPSuccess)
       rescue StandardError
         false
@@ -59,7 +59,7 @@ module Repose
 
       def call_api(prompt, max_tokens: 500, temperature: 0.7)
         uri = URI("#{API_ENDPOINT}/#{model}:generateContent?key=#{api_key}")
-        
+
         payload = {
           contents: [
             {
@@ -82,8 +82,8 @@ module Repose
           request["Content-Type"] = "application/json"
           request.body = payload.to_json
 
-          response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true, 
-                                     open_timeout: TIMEOUT, read_timeout: TIMEOUT) do |http|
+          response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true,
+                                                             open_timeout: TIMEOUT, read_timeout: TIMEOUT) do |http|
             http.request(request)
           end
 
@@ -117,22 +117,22 @@ module Repose
 
       def extract_text_from_response(body)
         return "" unless body.dig("candidates", 0, "content", "parts", 0, "text")
-        
+
         body.dig("candidates", 0, "content", "parts", 0, "text").strip
       end
 
       def build_description_prompt(context)
         <<~PROMPT
           Generate a concise, professional GitHub repository description (max 120 characters) for:
-          
+
           Repository name: #{context[:name]}
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
-          
+
           IMPORTANT: Include at least 2 relevant emojis that represent the project's purpose or technology.
           Example format: "🚀 Fast API server for data processing 📊"
-          
+
           Return only the description text with emojis, no quotes or extra formatting.
         PROMPT
       end
@@ -140,12 +140,12 @@ module Repose
       def build_topics_prompt(context)
         <<~PROMPT
           Generate 20 relevant GitHub topics (keywords) for this repository:
-          
+
           Repository name: #{context[:name]}
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
-          
+
           Include topics for: language, framework, use-case, architecture, deployment, testing, best practices.
           Return topics as comma-separated lowercase words (e.g., javascript, react, api, nodejs, docker, ci-cd).
           No quotes, no explanations, just the comma-separated list of 20 topics.
@@ -155,16 +155,16 @@ module Repose
       def build_readme_prompt(context)
         title = context[:name].split(/[-_]/).map(&:capitalize).join(" ")
         license = context[:license] || "MIT"
-        
+
         <<~PROMPT
           Generate a comprehensive README.md for a GitHub repository with these details:
-          
+
           Repository name: #{context[:name]} (Title: #{title})
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
           License: #{license}
-          
+
           Include these sections with relevant emojis:
           - Title with emoji and brief description with emojis
           - ✨ Features section (3-5 bullet points with emojis)
@@ -172,7 +172,7 @@ module Repose
           - 💻 Usage examples with code blocks
           - 🤝 Contributing guidelines
           - 📄 License (#{license})
-          
+
           Use proper Markdown formatting with emojis throughout for visual appeal.
           Be concise and professional. Return only the README content, no extra commentary.
         PROMPT
@@ -180,7 +180,7 @@ module Repose
 
       def clean_response(text)
         return "" if text.nil? || text.empty?
-        
+
         # Remove common markdown artifacts
         text.gsub(/^```\w*\n/, "")
             .gsub(/\n```$/, "")
@@ -189,10 +189,10 @@ module Repose
 
       def parse_topics(text)
         return [] if text.nil? || text.empty?
-        
+
         # Split by commas and clean up
-        topics = text.split(",").map(&:strip).map(&:downcase)
-        
+        topics = text.split(",").map { |t| t.strip.downcase }
+
         # Remove duplicates and limit to 20
         topics.uniq.first(20)
       end

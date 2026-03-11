@@ -5,9 +5,12 @@ require "octokit"
 module Repose
   class GitHubClient
     def initialize
-      token = Repose.config.github_token || ENV["REPOSE_TOKEN"]
+      token = Repose.config.github_token || ENV.fetch("REPOSE_TOKEN", nil)
 
-      raise Errors::ConfigurationError, "GitHub token not configured. Set REPOSE_TOKEN environment variable or run 'repose configure'" if token.nil? || token.empty?
+      if token.nil? || token.empty?
+        raise Errors::ConfigurationError,
+              "GitHub token not configured. Set REPOSE_TOKEN environment variable or run 'repose configure'"
+      end
 
       @client = Octokit::Client.new(access_token: token)
       @client.auto_paginate = true
@@ -43,21 +46,15 @@ module Repose
       }
 
       # Add license template if specified
-      if license && !license.empty?
-        repo_options[:license_template] = normalize_license_key(license)
-      end
+      repo_options[:license_template] = normalize_license_key(license) if license && !license.empty?
 
       # Create under an org when the owner differs from the authenticated user
-      unless owner.nil? || owner.empty? || owner == current_user_login
-        repo_options[:organization] = owner
-      end
+      repo_options[:organization] = owner unless owner.nil? || owner.empty? || owner == current_user_login
 
       repo = @client.create_repository(name, repo_options)
 
       # Add topics if provided
-      if topics.any?
-        @client.replace_all_topics(repo.full_name, topics.map(&:downcase).uniq)
-      end
+      @client.replace_all_topics(repo.full_name, topics.map(&:downcase).uniq) if topics.any?
 
       # Create README if provided
       if readme
@@ -103,7 +100,7 @@ module Repose
         message,
         content
       )
-    rescue Octokit::UnprocessableEntity => e
+    rescue Octokit::UnprocessableEntity
       # File might already exist, skip it
       puts "Skipping #{path} (already exists)"
     rescue Octokit::Error => e
@@ -131,8 +128,7 @@ module Repose
         "unlicense" => "unlicense"
       }
 
-      normalized = license_map[license.downcase] || license.downcase
-      normalized
+      license_map[license.downcase] || license.downcase
     end
   end
 end

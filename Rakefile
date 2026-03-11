@@ -14,7 +14,7 @@ task :console do
   require "bundler/setup"
   require "repose"
   require "irb"
-  
+
   ARGV.clear
   IRB.start
 end

@@ -93,7 +93,7 @@ RSpec.describe Repose::AI::OllamaProvider do
         .to_return(status: 200, body: response_body)
 
       models = provider.list_models
-      expect(models).to eq(["mistral", "llama3", "gemma"])
+      expect(models).to eq(%w[mistral llama3 gemma])
     end
 
     it "returns empty array when no models" do
@@ -238,7 +238,7 @@ RSpec.describe Repose::AI::OllamaProvider do
           .to_return(status: 200, body: response_body)
 
         result = provider.generate_topics(context)
-        expect(result).to eq(["python", "fastapi", "data-processing", "api", "performance"])
+        expect(result).to eq(%w[python fastapi data-processing api performance])
       end
 
       it "removes duplicates" do
@@ -250,7 +250,7 @@ RSpec.describe Repose::AI::OllamaProvider do
           .to_return(status: 200, body: response_body)
 
         result = provider.generate_topics(context)
-        expect(result).to eq(["python", "api", "fastapi"])
+        expect(result).to eq(%w[python api fastapi])
       end
 
       it "limits to 20 topics" do
@@ -274,7 +274,7 @@ RSpec.describe Repose::AI::OllamaProvider do
           .to_return(status: 200, body: response_body)
 
         result = provider.generate_topics(context)
-        expect(result).to eq(["python", "fastapi", "api"])
+        expect(result).to eq(%w[python fastapi api])
       end
 
       it "converts to lowercase" do
@@ -286,7 +286,7 @@ RSpec.describe Repose::AI::OllamaProvider do
           .to_return(status: 200, body: response_body)
 
         result = provider.generate_topics(context)
-        expect(result).to eq(["python", "fastapi", "api"])
+        expect(result).to eq(%w[python fastapi api])
       end
 
       it "filters empty topics" do
@@ -298,7 +298,7 @@ RSpec.describe Repose::AI::OllamaProvider do
           .to_return(status: 200, body: response_body)
 
         result = provider.generate_topics(context)
-        expect(result).to eq(["python", "fastapi", "api"])
+        expect(result).to eq(%w[python fastapi api])
       end
     end
 

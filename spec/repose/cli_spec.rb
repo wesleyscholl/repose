@@ -29,7 +29,7 @@ RSpec.describe Repose::CLI do
 
   describe "#version" do
     it "outputs the version" do
-      expect { cli.version }.to output(/Repose v#{Repose::VERSION}/).to_stdout
+      expect { cli.version }.to output(/Repose v#{Repose::VERSION}/o).to_stdout
     end
   end
 
@@ -62,7 +62,7 @@ RSpec.describe Repose::CLI do
       cli.configure
 
       expect(prompt).to have_received(:ask).with("Default topics (comma-separated):")
-      expect(config).to have_received(:default_topics=).with(["ruby", "cli", "tool"])
+      expect(config).to have_received(:default_topics=).with(%w[ruby cli tool])
     end
 
     it "saves the configuration" do
@@ -72,8 +72,7 @@ RSpec.describe Repose::CLI do
 
     context "when user provides empty responses" do
       before do
-        allow(prompt).to receive(:mask).and_return("")
-        allow(prompt).to receive(:ask).and_return("")
+        allow(prompt).to receive_messages(mask: "", ask: "")
       end
 
       it "does not update config values" do
@@ -91,7 +90,7 @@ RSpec.describe Repose::CLI do
       {
         name: "test-repo",
         description: "A test repository",
-        topics: ["ruby", "test"],
+        topics: %w[ruby test],
         readme: "# Test Repo\n\nThis is a test repository.",
         language: "ruby",
         framework: nil,
@@ -181,8 +180,7 @@ RSpec.describe Repose::CLI do
       before do
         allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("None")
         allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
-        allow(prompt).to receive(:ask).and_return("")
-        allow(prompt).to receive(:yes?).and_return(true)
+        allow(prompt).to receive_messages(ask: "", yes?: true)
       end
 
       it "does not prompt for language" do
@@ -207,8 +205,7 @@ RSpec.describe Repose::CLI do
 
       before do
         allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
-        allow(prompt).to receive(:ask).and_return("")
-        allow(prompt).to receive(:yes?).and_return(true)
+        allow(prompt).to receive_messages(ask: "", yes?: true)
       end
 
       it "does not prompt for framework" do
@@ -234,8 +231,7 @@ RSpec.describe Repose::CLI do
       before do
         allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("None")
         allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
-        allow(prompt).to receive(:ask).and_return("")
-        allow(prompt).to receive(:yes?).and_return(true)
+        allow(prompt).to receive_messages(ask: "", yes?: true)
       end
 
       it "does not prompt for namespace" do
@@ -269,8 +265,7 @@ RSpec.describe Repose::CLI do
         allow(prompt).to receive(:select).with("Create repository under:", multi_namespaces).and_return("my-org")
         allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("None")
         allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
-        allow(prompt).to receive(:ask).and_return("")
-        allow(prompt).to receive(:yes?).and_return(true)
+        allow(prompt).to receive_messages(ask: "", yes?: true)
       end
 
       it "prompts for namespace selection" do
@@ -313,8 +308,7 @@ RSpec.describe Repose::CLI do
           .and_raise(Repose::Errors::GitHubError.new("API error"))
         allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("None")
         allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
-        allow(prompt).to receive(:ask).and_return("")
-        allow(prompt).to receive(:yes?).and_return(true)
+        allow(prompt).to receive_messages(ask: "", yes?: true)
       end
 
       it "falls back to personal account (nil owner) and continues" do
@@ -356,8 +350,7 @@ RSpec.describe Repose::CLI do
 
       before do
         allow(prompt).to receive(:select).and_return("None", "mit")
-        allow(prompt).to receive(:ask).and_return("")
-        allow(prompt).to receive(:yes?).and_return(false)
+        allow(prompt).to receive_messages(ask: "", yes?: false)
       end
 
       it "does not create repository" do
@@ -386,8 +379,7 @@ RSpec.describe Repose::CLI do
     context "when repository creation fails" do
       before do
         allow(prompt).to receive(:select).and_return("ruby", "None", "mit")
-        allow(prompt).to receive(:ask).and_return("")
-        allow(prompt).to receive(:yes?).and_return(true)
+        allow(prompt).to receive_messages(ask: "", yes?: true)
         allow(github_client).to receive(:create_repository)
           .and_raise(Repose::Errors::GitHubError.new("Failed to create repo"))
       end

@@ -46,6 +46,7 @@ RSpec.describe "Integration Tests", type: :integration do
       # Set up mocked responses
       allow(mock_ai_generator).to receive(:generate).and_return(ai_content)
       allow(mock_github_client).to receive_messages(create_repository: github_repo,
+                                                    create_file: nil,
                                                     available_namespaces: [{
                                                       name: "testuser (personal)", value: "testuser"
                                                     }])

@@ -4,8 +4,10 @@ require "json"
 
 module Repose
   class ProjectFilesGenerator
+    TEMPLATES_DIR = File.expand_path("templates/konjo", __dir__)
+
     def self.generate(language:, framework:, name:)
-      files = {}
+      files = generate_konjo_files
 
       case language&.downcase
       when "go", "golang"
@@ -27,6 +29,14 @@ module Repose
       end
 
       files
+    end
+
+    def self.generate_konjo_files
+      {
+        "AGENTS.md" => File.read(File.join(TEMPLATES_DIR, "AGENTS.md")),
+        "CLAUDE.md" => File.read(File.join(TEMPLATES_DIR, "CLAUDE.md")),
+        ".github/copilot-instructions.md" => File.read(File.join(TEMPLATES_DIR, "copilot-instructions.md"))
+      }
     end
 
     def self.generate_go_files(name)

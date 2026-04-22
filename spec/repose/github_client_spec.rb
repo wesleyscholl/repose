@@ -222,12 +222,33 @@ RSpec.describe Repose::GitHubClient do
       end
 
       context "when a license is specified" do
-        it "includes the normalized license template" do
+        it "includes the normalized license template for GitHub-supported keys" do
           client.create_repository(**create_params, license: "mit")
 
           expect(octokit_client).to have_received(:create_repository).with(
             "test-repo", hash_including(license_template: "mit")
           )
+        end
+
+        it "normalizes apache-2.0 correctly" do
+          client.create_repository(**create_params, license: "apache-2.0")
+
+          expect(octokit_client).to have_received(:create_repository).with(
+            "test-repo", hash_including(license_template: "apache-2.0")
+          )
+        end
+
+        it "does not include license_template for non-GitHub-supported licenses" do
+          %w[busl-1.1 elastic-2.0 sspl-1.0 eupl-1.2].each do |unsupported|
+            octokit_client.instance_variable_set(:@received_messages, {}) if octokit_client.respond_to?(:received_messages)
+            allow(octokit_client).to receive(:create_repository).and_return(repo_data)
+
+            client.create_repository(**create_params, license: unsupported)
+
+            expect(octokit_client).to have_received(:create_repository).with(
+              "test-repo", hash_not_including(:license_template)
+            ).at_least(:once)
+          end
         end
       end
     end

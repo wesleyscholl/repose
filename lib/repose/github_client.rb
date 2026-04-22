@@ -45,8 +45,11 @@ module Repose
         has_projects: true
       }
 
-      # Add license template if specified
-      repo_options[:license_template] = normalize_license_key(license) if license && !license.empty?
+      # Add license template only for GitHub-supported keys
+      if license && !license.empty?
+        normalized = normalize_license_key(license)
+        repo_options[:license_template] = normalized if normalized
+      end
 
       # Create under an org when the owner differs from the authenticated user
       repo_options[:organization] = owner unless owner.nil? || owner.empty? || owner == current_user_login
@@ -114,21 +117,31 @@ module Repose
     end
 
     def normalize_license_key(license)
-      # GitHub API uses specific license keys
-      license_map = {
+      # Maps display values to GitHub API license_template keys.
+      # Returns nil for licenses GitHub cannot auto-create (BUSL, Elastic, SSPL, EUPL, etc.)
+      # so the caller skips setting license_template rather than sending a bad key.
+      github_supported = {
         "mit" => "mit",
         "apache" => "apache-2.0",
         "apache-2.0" => "apache-2.0",
+        "gpl-2.0" => "gpl-2.0",
         "gpl" => "gpl-3.0",
         "gpl-3.0" => "gpl-3.0",
+        "lgpl-2.1" => "lgpl-2.1",
+        "lgpl-3.0" => "lgpl-3.0",
+        "agpl-3.0" => "agpl-3.0",
         "bsd" => "bsd-3-clause",
+        "bsd-2-clause" => "bsd-2-clause",
         "bsd-3-clause" => "bsd-3-clause",
         "mpl" => "mpl-2.0",
         "mpl-2.0" => "mpl-2.0",
+        "isc" => "isc",
+        "bsl-1.0" => "bsl-1.0",
+        "cc0-1.0" => "cc0-1.0",
         "unlicense" => "unlicense"
       }
 
-      license_map[license.downcase] || license.downcase
+      github_supported[license.downcase]
     end
   end
 end

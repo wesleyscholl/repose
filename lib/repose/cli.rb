@@ -150,15 +150,32 @@ module Repose
       # License selection
       unless context[:license]
         licenses = [
-          { name: "MIT License (Permissive, most popular)", value: "mit" },
-          { name: "Apache 2.0 (Permissive with patent grant)", value: "apache-2.0" },
-          { name: "GPL 3.0 (Copyleft, strong)", value: "gpl-3.0" },
+          # --- Permissive ---
+          { name: "MIT (Permissive, most popular)", value: "mit" },
+          { name: "Apache 2.0 (Permissive + patent grant)", value: "apache-2.0" },
           { name: "BSD 3-Clause (Permissive)", value: "bsd-3-clause" },
-          { name: "Mozilla Public License 2.0", value: "mpl-2.0" },
+          { name: "BSD 2-Clause (Permissive, minimal)", value: "bsd-2-clause" },
+          { name: "ISC (Permissive, OpenBSD-style)", value: "isc" },
+          { name: "Boost Software License 1.0 (Permissive, header-only friendly)", value: "bsl-1.0" },
+          # --- Copyleft ---
+          { name: "GPL 2.0 (Copyleft)", value: "gpl-2.0" },
+          { name: "GPL 3.0 (Copyleft, strong)", value: "gpl-3.0" },
+          { name: "LGPL 2.1 (Copyleft, library-friendly)", value: "lgpl-2.1" },
+          { name: "LGPL 3.0 (Copyleft, library-friendly)", value: "lgpl-3.0" },
+          { name: "AGPL 3.0 (Copyleft + network use)", value: "agpl-3.0" },
+          { name: "Mozilla Public License 2.0 (File-level copyleft)", value: "mpl-2.0" },
+          { name: "EUPL 1.2 (EU Public License, copyleft)", value: "eupl-1.2" },
+          # --- Source-available / Commercial ---
+          { name: "BUSL 1.1 (Business Source — converts to open after delay)", value: "busl-1.1" },
+          { name: "Elastic License 2.0 (Source-available, no competing SaaS)", value: "elastic-2.0" },
+          { name: "Server Side Public License (SSPL, MongoDB-style)", value: "sspl-1.0" },
+          # --- Public Domain ---
+          { name: "CC0 1.0 (Public Domain Dedication)", value: "cc0-1.0" },
           { name: "Unlicense (Public Domain)", value: "unlicense" },
+          # --- Custom ---
           { name: "Other/Custom", value: "other" }
         ]
-        context[:license] = prompt.select("Choose a license:", licenses)
+        context[:license] = prompt.select("Choose a license:", licenses, per_page: 20)
 
         context[:license] = prompt.ask("Enter license name:", default: "MIT") if context[:license] == "other"
       end

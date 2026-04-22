@@ -118,7 +118,7 @@ RSpec.describe Repose::CLI do
 
       before do
         allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("None")
-        allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
+        allow(prompt).to receive(:select).with("Choose a license:", anything, anything).and_return("mit")
         allow(prompt).to receive(:ask).with("What will this project do? (optional):").and_return("A test project")
         allow(prompt).to receive(:yes?).with("Create repository?").and_return(true)
       end
@@ -179,7 +179,7 @@ RSpec.describe Repose::CLI do
 
       before do
         allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("None")
-        allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
+        allow(prompt).to receive(:select).with("Choose a license:", anything, anything).and_return("mit")
         allow(prompt).to receive_messages(ask: "", yes?: true)
       end
 
@@ -204,7 +204,7 @@ RSpec.describe Repose::CLI do
       let(:options) { { language: "ruby", framework: "rails", dry_run: false } }
 
       before do
-        allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
+        allow(prompt).to receive(:select).with("Choose a license:", anything, anything).and_return("mit")
         allow(prompt).to receive_messages(ask: "", yes?: true)
       end
 
@@ -230,7 +230,7 @@ RSpec.describe Repose::CLI do
 
       before do
         allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("None")
-        allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
+        allow(prompt).to receive(:select).with("Choose a license:", anything, anything).and_return("mit")
         allow(prompt).to receive_messages(ask: "", yes?: true)
       end
 
@@ -264,7 +264,7 @@ RSpec.describe Repose::CLI do
         allow(github_client).to receive(:available_namespaces).and_return(multi_namespaces)
         allow(prompt).to receive(:select).with("Create repository under:", multi_namespaces).and_return("my-org")
         allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("None")
-        allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
+        allow(prompt).to receive(:select).with("Choose a license:", anything, anything).and_return("mit")
         allow(prompt).to receive_messages(ask: "", yes?: true)
       end
 
@@ -307,7 +307,7 @@ RSpec.describe Repose::CLI do
         allow(github_client).to receive(:available_namespaces)
           .and_raise(Repose::Errors::GitHubError.new("API error"))
         allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("None")
-        allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
+        allow(prompt).to receive(:select).with("Choose a license:", anything, anything).and_return("mit")
         allow(prompt).to receive_messages(ask: "", yes?: true)
       end
 
@@ -400,7 +400,7 @@ RSpec.describe Repose::CLI do
       before do
         allow(prompt).to receive(:select).with("Primary programming language:", anything, anything).and_return("go")
         allow(prompt).to receive(:select).with("Framework/Library (optional):", anything).and_return("Gin")
-        allow(prompt).to receive(:select).with("Choose a license:", anything).and_return("mit")
+        allow(prompt).to receive(:select).with("Choose a license:", anything, anything).and_return("mit")
         allow(prompt).to receive(:ask).with("What will this project do? (optional):").and_return("API server")
       end
 

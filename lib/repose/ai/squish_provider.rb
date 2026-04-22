@@ -6,74 +6,78 @@ require "uri"
 
 module Repose
   module AI
-    class GeminiProvider
-      API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models"
-      DEFAULT_MODEL = "gemini-1.5-flash"
-      MAX_RETRIES = 3
+    # OpenAI-compatible provider for Squish local inference server.
+    # Squish exposes a drop-in /v1/chat/completions endpoint at localhost:3333.
+    # Configure via SQUISH_ENDPOINT and SQUISH_MODEL env vars.
+    class SquishProvider
+      DEFAULT_ENDPOINT = "http://localhost:3333"
       TIMEOUT = 30
+      MAX_RETRIES = 2
 
-      attr_reader :api_key, :model
+      attr_reader :endpoint
 
-      def initialize(api_key: nil, model: DEFAULT_MODEL)
-        @api_key = api_key || ENV.fetch("GEMINI_API_KEY", nil)
-        @model = model
+      def initialize(endpoint: nil, model: nil)
+        @endpoint = endpoint || ENV.fetch("SQUISH_ENDPOINT", DEFAULT_ENDPOINT)
+        @explicit_model = model || ENV.fetch("SQUISH_MODEL", nil)
+      end
 
-        raise Repose::ConfigurationError, "Gemini API key not configured" if @api_key.nil? || @api_key.empty?
+      # Lazily resolved: explicit > ENV > first model from /v1/models > "squish"
+      def model
+        @model ||= @explicit_model || list_models.first || "squish"
+      end
+
+      def available?
+        list_models.any?
+      rescue StandardError
+        false
+      end
+
+      def list_models
+        uri = URI("#{endpoint}/v1/models")
+        request = Net::HTTP::Get.new(uri)
+
+        response = Net::HTTP.start(uri.hostname, uri.port,
+                                   open_timeout: 5, read_timeout: 5) do |http|
+          http.request(request)
+        end
+
+        return [] unless response.is_a?(Net::HTTPSuccess)
+
+        body = JSON.parse(response.body)
+        body["data"]&.map { |m| m["id"] } || []
+      rescue StandardError
+        []
       end
 
       def generate_description(context)
         prompt = build_description_prompt(context)
-        response = call_api(prompt, max_tokens: 100)
+        response = call_api(prompt, max_tokens: 150)
         clean_response(response)
       end
 
       def generate_topics(context)
         prompt = build_topics_prompt(context)
-        response = call_api(prompt, max_tokens: 50)
+        response = call_api(prompt, max_tokens: 100)
         parse_topics(response)
       end
 
       def generate_readme(context)
         prompt = build_readme_prompt(context)
-        response = call_api(prompt, max_tokens: 1000)
+        response = call_api(prompt, max_tokens: 2000)
         clean_response(response)
-      end
-
-      def available?
-        return false if @api_key.nil? || @api_key.empty?
-
-        # Quick health check
-        uri = URI("#{API_ENDPOINT}/#{model}?key=#{api_key}")
-        request = Net::HTTP::Get.new(uri)
-
-        response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true, open_timeout: 5, read_timeout: 5) do |http|
-          http.request(request)
-        end
-
-        response.is_a?(Net::HTTPSuccess)
-      rescue StandardError
-        false
       end
 
       private
 
       def call_api(prompt, max_tokens: 500, temperature: 0.7)
-        uri = URI("#{API_ENDPOINT}/#{model}:generateContent?key=#{api_key}")
+        uri = URI("#{endpoint}/v1/chat/completions")
 
         payload = {
-          contents: [
-            {
-              parts: [
-                { text: prompt }
-              ]
-            }
-          ],
-          generationConfig: {
-            temperature: temperature,
-            maxOutputTokens: max_tokens,
-            topP: 0.95,
-            topK: 40
-          }
+          model: model,
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: max_tokens,
+          temperature: temperature,
+          stream: false
         }
 
         retries = 0
@@ -82,22 +86,24 @@ module Repose
           request["Content-Type"] = "application/json"
           request.body = payload.to_json
 
-          response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true,
-                                                             open_timeout: TIMEOUT, read_timeout: TIMEOUT) do |http|
+          response = Net::HTTP.start(uri.hostname, uri.port,
+                                     open_timeout: TIMEOUT, read_timeout: TIMEOUT) do |http|
             http.request(request)
           end
 
           handle_response(response)
         rescue Net::OpenTimeout, Net::ReadTimeout => e
           retries += 1
-          raise Repose::APIError, "Gemini API timeout: #{e.message}" if retries > MAX_RETRIES
+          raise Repose::APIError, "Squish timeout: #{e.message}" if retries > MAX_RETRIES
 
-          sleep(2**retries) # Exponential backoff
+          sleep(2 * retries)
           retry
+        rescue Errno::ECONNREFUSED
+          raise Repose::APIError, "Cannot connect to Squish at #{endpoint}. Is Squish running?"
         rescue Repose::Errors::Error
-          raise # Let AuthenticationError, RateLimitError, etc. propagate unchanged
+          raise
         rescue StandardError => e
-          raise Repose::APIError, "Gemini API error: #{e.message}"
+          raise Repose::APIError, "Squish error: #{e.message}"
         end
       end
 
@@ -105,27 +111,19 @@ module Repose
         case response
         when Net::HTTPSuccess
           body = JSON.parse(response.body)
-          extract_text_from_response(body)
-        when Net::HTTPUnauthorized
-          raise Repose::AuthenticationError, "Invalid Gemini API key"
-        when Net::HTTPTooManyRequests
-          raise Repose::RateLimitError, "Gemini API rate limit exceeded"
+          body.dig("choices", 0, "message", "content")&.strip || ""
+        when Net::HTTPNotFound
+          raise Repose::APIError, "Squish model '#{model}' not found"
         else
-          raise Repose::APIError, "Gemini API error (#{response.code}): #{response.body}"
+          raise Repose::APIError, "Squish error (#{response.code}): #{response.body}"
         end
-      end
-
-      def extract_text_from_response(body)
-        return "" unless body.dig("candidates", 0, "content", "parts", 0, "text")
-
-        body.dig("candidates", 0, "content", "parts", 0, "text").strip
       end
 
       def build_description_prompt(context)
         <<~PROMPT
           Generate a punchy GitHub repository description (max 160 characters) for:
 
-          Repository name: #{context[:name]}
+          Name: #{context[:name]}
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
@@ -144,7 +142,7 @@ module Repose
         <<~PROMPT
           Generate 15-20 GitHub repository topics for:
 
-          Repository name: #{context[:name]}
+          Name: #{context[:name]}
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
@@ -167,7 +165,7 @@ module Repose
         <<~PROMPT
           Generate a comprehensive README.md for:
 
-          Repository name: #{context[:name]} (Title: #{title})
+          Name: #{context[:name]} (Title: #{title})
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
@@ -183,15 +181,15 @@ module Repose
           7. ## 🤝 Contributing — fork/branch/PR steps
           8. ## 📄 License — #{license}
 
-          Use proper Markdown. Be specific, not generic. Return ONLY the README content, no extra commentary.
+          Use proper Markdown. Be specific, not generic. Return ONLY the README content.
         PROMPT
       end
 
       def clean_response(text)
         return "" if text.nil? || text.empty?
 
-        # Remove common markdown artifacts
-        text.gsub(/^```\w*\n/, "")
+        text.gsub(/^Here'?s.*?:\s*/i, "")
+            .gsub(/^```\w*\n/, "")
             .gsub(/\n```$/, "")
             .strip
       end
@@ -199,11 +197,7 @@ module Repose
       def parse_topics(text)
         return [] if text.nil? || text.empty?
 
-        # Split by commas and clean up
-        topics = text.split(",").map { |t| t.strip.downcase }
-
-        # Remove duplicates and limit to 20
-        topics.uniq.first(20)
+        text.split(",").map { |t| t.strip.downcase }.reject(&:empty?).uniq.first(20)
       end
     end
   end

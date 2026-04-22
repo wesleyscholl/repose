@@ -132,31 +132,39 @@ module Repose
 
       def build_description_prompt(context)
         <<~PROMPT
-          Generate a concise GitHub repository description (max 120 characters) for:
+          Generate a punchy GitHub repository description (max 160 characters) for:
 
           Repository: #{context[:name]}
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
 
-          IMPORTANT: Include at least 2 relevant emojis that represent the project.
-          Example: "🚀 Fast API server for data processing 📊"
+          Style — 3-5 emojis, name dash tagline, concrete value props. Examples:
+          "⚡💾 Vectro — Compress LLM embeddings 🧠🚀 Save memory, speed up retrieval, keep semantic accuracy 🎯"
+          "🤖🗜️⚡️ Squish — Compress local LLMs once, run forever at sub-second load times. OpenAI + Ollama drop-in 🍎"
+          "🚀🧠 Kyro — Production RAG pipeline — hybrid retrieval 🔍, reranking 🎯, RAGAS evals 📊"
 
-          Return ONLY the description text with emojis, no quotes or formatting.
+          Return ONLY the description text. No quotes. No explanation.
         PROMPT
       end
 
       def build_topics_prompt(context)
         <<~PROMPT
-          Generate 20 GitHub topics for:
+          Generate 15-20 GitHub repository topics for:
 
           Repository: #{context[:name]}
           Language: #{context[:language]}
           Framework: #{context[:framework]}
           Purpose: #{context[:purpose]}
 
-          Include topics for: language, framework, use-case, architecture, deployment, testing.
-          Return ONLY comma-separated lowercase keywords (e.g., python, api, docker, cli, testing, ci-cd).
+          Rules:
+          - Highly specific technical terms only. NO generic filler.
+          - Forbidden: "development", "best-practices", "programming", "software", "opensource", "tools"
+          - Required: language, framework, core domain keywords, architecture patterns, specific libs/tools
+          - Good: "quantization, mlx, apple-silicon, llm-inference, int4, model-compression, on-device-ai"
+          - Bad: "development, best-practices, programming, opensource, tools"
+
+          Return ONLY comma-separated lowercase kebab-case topics. No explanations. No numbering.
         PROMPT
       end
 
@@ -165,7 +173,7 @@ module Repose
         license = context[:license] || "MIT"
 
         <<~PROMPT
-          Create a GitHub README.md for:
+          Generate a comprehensive README.md for:
 
           Repository: #{context[:name]} (Display as: #{title})
           Language: #{context[:language]}
@@ -173,16 +181,17 @@ module Repose
           Purpose: #{context[:purpose]}
           License: #{license}
 
-          Include sections with emojis:
-          - Title with emoji (# 🚀 #{title})
-          - Brief description with emojis
-          - ✨ Features (3-5 bullet points with emojis)
-          - 🚀 Installation (#{context[:language]}-specific commands)
-          - 💻 Usage with code examples
-          - 🤝 Contributing
-          - 📄 License (#{license})
+          Required structure (use emojis throughout):
+          1. # Title with emoji tagline
+          2. Shields.io badge row: language, license, build status
+          3. One-paragraph hero description with emoji flair
+          4. ## ✨ Features — 4-6 specific bullets with emojis
+          5. ## 🚀 Quick Start — clone + language-appropriate install command
+          6. ## 💻 Usage — concrete code example in a fenced block
+          7. ## 🤝 Contributing — fork/branch/PR steps
+          8. ## 📄 License — #{license}
 
-          Use proper Markdown with emojis. Return ONLY the README content.
+          Use proper Markdown. Be specific. Return ONLY the README content.
         PROMPT
       end
 

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "ai/squish_provider"
 require_relative "ai/gemini_provider"
 require_relative "ai/ollama_provider"
 
@@ -33,13 +34,17 @@ module Repose
       return nil if [:none, false].include?(provider_name)
 
       case provider_name&.to_sym
+      when :squish
+        AI::SquishProvider.new if squish_available?
       when :gemini
         AI::GeminiProvider.new if gemini_available?
       when :ollama
         AI::OllamaProvider.new if ollama_available?
       when nil
-        # Auto-detect: prefer Gemini, fallback to Ollama, then none
-        if gemini_available?
+        # Auto-detect: prefer Squish (local), then Gemini, then Ollama, then none
+        if squish_available?
+          AI::SquishProvider.new
+        elsif gemini_available?
           AI::GeminiProvider.new
         elsif ollama_available?
           AI::OllamaProvider.new
@@ -49,6 +54,12 @@ module Repose
       end
     rescue Repose::ConfigurationError, Repose::APIError
       nil # Fallback to template-based generation
+    end
+
+    def squish_available?
+      AI::SquishProvider.new.available?
+    rescue StandardError
+      false
     end
 
     def gemini_available?
@@ -96,17 +107,17 @@ module Repose
     end
 
     def generate_fallback_description(context)
-      # Fallback description generation without AI - with emojis
       emoji = select_emoji_for_language(context[:language])
       purpose_emoji = select_emoji_for_purpose(context[:purpose])
+      title = context[:name].split(/[-_]/).map(&:capitalize).join(" ")
 
-      base_desc = "#{emoji} A #{context[:language]}"
+      base_desc = "#{emoji} #{title} — a #{context[:language]}"
       base_desc += " #{context[:framework]}" if context[:framework]
       base_desc += " project"
       base_desc += " for #{context[:purpose]}" if context[:purpose] && !context[:purpose].empty?
       base_desc += " #{purpose_emoji}" if purpose_emoji
 
-      base_desc.capitalize
+      base_desc
     end
 
     # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
@@ -151,9 +162,6 @@ module Repose
         topics << "security" if purpose_lower.match?(/(secur|auth|encrypt)/)
       end
 
-      # General best practice topics
-      topics.push("opensource", "development", "best-practices")
-
       topics.uniq.first(20)
     end
     # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
@@ -164,20 +172,27 @@ module Repose
       license = context[:license] || "MIT"
       framework_str = context[:framework] ? "#{context[:framework]} " : ""
       purpose_str = context[:purpose] && !context[:purpose].empty? ? " for #{context[:purpose]}" : ""
+      lang_badge = context[:language]&.downcase&.gsub(" ", "%20") || "unknown"
+      license_badge = license.downcase.gsub("-", "--")
 
       <<~README
         # #{emoji} #{title}
 
-        🚀 A #{context[:language]} #{framework_str}project#{purpose_str}.
+        ![Language](https://img.shields.io/badge/language-#{lang_badge}-blue) ![License](https://img.shields.io/badge/license-#{license_badge}-green) ![Status](https://img.shields.io/badge/status-active-brightgreen)
+
+        > 🚀 A #{context[:language]} #{framework_str}project#{purpose_str}.
 
         ## ✨ Features
 
         - 🛠️ Modern #{context[:language]} development
         #{"- 🏛️ Built with #{context[:framework]}" if context[:framework]}
-        - 📚 Comprehensive documentation
+        - 📚 Well-documented and easy to use
         - ✅ Production-ready code
+        - ⚡ Performant and reliable
 
-        ## 🚀 Installation
+        ## 🚀 Quick Start
+
+        ### Installation
 
         ```bash
         git clone https://github.com/yourusername/#{context[:name]}.git
@@ -188,18 +203,21 @@ module Repose
 
         ## 💻 Usage
 
-        More documentation coming soon!
+        ```bash
+        # More examples coming soon
+        ```
 
         ## 🤝 Contributing
 
-        1. Fork the repository
-        2. Create a feature branch
-        3. Make your changes
-        4. Submit a pull request
+        1. Fork this repository
+        2. Create your feature branch: `git checkout -b feat/my-feature`
+        3. Commit your changes: `git commit -m 'feat: add my feature'`
+        4. Push to the branch: `git push origin feat/my-feature`
+        5. Open a pull request
 
         ## 📄 License
 
-        This project is licensed under the #{license} License.
+        This project is licensed under the #{license} License — see the [LICENSE](LICENSE) file for details.
       README
     end
 

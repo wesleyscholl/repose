@@ -13,8 +13,25 @@ RSpec.describe Repose::AIGenerator do
       expect(gen.provider).to be_nil
     end
 
+    context "with Squish provider" do
+      before do
+        allow_any_instance_of(Repose::AI::SquishProvider).to receive(:available?).and_return(true)
+      end
+
+      it "initializes Squish provider when specified" do
+        gen = described_class.new(provider: :squish)
+        expect(gen.provider).to be_a(Repose::AI::SquishProvider)
+      end
+
+      it "auto-detects Squish first when available" do
+        gen = described_class.new
+        expect(gen.provider).to be_a(Repose::AI::SquishProvider)
+      end
+    end
+
     context "with Gemini provider" do
       before do
+        allow_any_instance_of(Repose::AI::SquishProvider).to receive(:available?).and_return(false)
         ENV["GEMINI_API_KEY"] = "test-key"
         allow_any_instance_of(Repose::AI::GeminiProvider).to receive(:available?).and_return(true)
       end
@@ -28,7 +45,7 @@ RSpec.describe Repose::AIGenerator do
         expect(gen.provider).to be_a(Repose::AI::GeminiProvider)
       end
 
-      it "auto-detects Gemini when available and no provider specified" do
+      it "auto-detects Gemini when Squish unavailable" do
         gen = described_class.new
         expect(gen.provider).to be_a(Repose::AI::GeminiProvider)
       end
@@ -36,6 +53,7 @@ RSpec.describe Repose::AIGenerator do
 
     context "with Ollama provider" do
       before do
+        allow_any_instance_of(Repose::AI::SquishProvider).to receive(:available?).and_return(false)
         ENV.delete("GEMINI_API_KEY")
         allow_any_instance_of(Repose::AI::OllamaProvider).to receive(:available?).and_return(true)
       end
@@ -45,7 +63,7 @@ RSpec.describe Repose::AIGenerator do
         expect(gen.provider).to be_a(Repose::AI::OllamaProvider)
       end
 
-      it "falls back to Ollama when Gemini unavailable" do
+      it "falls back to Ollama when Squish and Gemini unavailable" do
         gen = described_class.new
         expect(gen.provider).to be_a(Repose::AI::OllamaProvider)
       end
@@ -53,6 +71,7 @@ RSpec.describe Repose::AIGenerator do
 
     context "with no AI provider available" do
       before do
+        allow_any_instance_of(Repose::AI::SquishProvider).to receive(:available?).and_return(false)
         ENV.delete("GEMINI_API_KEY")
         allow_any_instance_of(Repose::AI::OllamaProvider).to receive(:available?).and_return(false)
       end
@@ -76,16 +95,11 @@ RSpec.describe Repose::AIGenerator do
 
     context "with AI provider" do
       before do
-        ENV["GEMINI_API_KEY"] = "test-key"
-        allow_any_instance_of(Repose::AI::GeminiProvider).to receive(:available?).and_return(true)
-      end
-
-      after do
-        ENV.delete("GEMINI_API_KEY")
+        allow_any_instance_of(Repose::AI::SquishProvider).to receive(:available?).and_return(true)
       end
 
       it "returns true when provider is set" do
-        gen = described_class.new(provider: :gemini)
+        gen = described_class.new(provider: :squish)
         expect(gen.use_ai?).to be true
       end
     end
